@@ -15,7 +15,7 @@ const MONGO_URI = process.env.MONGO_URI;
 // 3. Middleware
 app.use(cors());
 app.use(express.json());
-
+app.use(express.static('public'));
 // 4. Database Connection
 mongoose.connect(MONGO_URI)
     .then(() => console.log('✅ Database MongoDB connected successfully'))
