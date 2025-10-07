@@ -105,7 +105,7 @@
     </div>
 
     <script>
-        // Ganti URL ini dengan URL backend Anda yang sudah di-deploy di Render.com
+        // Menggunakan URL backend Anda yang sudah live di Render.com
         const API_BASE_URL = 'https://nutri-balance-backend.onrender.com/api';
 
         const totalUsersEl = document.getElementById('total-users');
@@ -119,7 +119,7 @@
                 // Ambil data user dan log secara bersamaan
                 const [usersResponse, logsResponse] = await Promise.all([
                     fetch(`${API_BASE_URL}/admin/users`),
-                    fetch(`${API_BADE_URL}/admin/logs`)
+                    fetch(`${API_BASE_URL}/admin/logs`) // <-- Memperbaiki typo di sini
                 ]);
 
                 if (!usersResponse.ok || !logsResponse.ok) {
