@@ -103,6 +103,31 @@ const authenticateToken = (req, res, next) => {
 
 
 // 7. API Routes (Sekarang menggunakan Mongoose)
+// Tambahkan ini di bagian API Routes di server.js
+
+// == ADMIN ROUTES (Untuk Dashboard) ==
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        // Mengambil semua user, tapi menghapus field password
+        const users = await User.find({}).select('-password');
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching users' });
+    }
+});
+
+app.get('/api/admin/logs', async (req, res) => {
+    try {
+        // Mengambil 50 log terbaru dan menyertakan data user
+        const logs = await FoodLog.find({})
+            .sort({ _id: -1 }) // Urutkan dari yang terbaru
+            .limit(50)
+            .populate('userId', 'name email'); // Ambil nama & email dari user terkait
+        res.json(logs);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching logs' });
+    }
+});
 
 // == AUTH ROUTES ==
 app.post('/api/auth/register', async (req, res) => {
