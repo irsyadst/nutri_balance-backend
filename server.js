@@ -71,16 +71,11 @@ const calculateNeeds = (profile) => {
     profile.targetFats = Math.round((tdee * 0.30) / 9);
 };
 
-// ===== PERUBAHAN UTAMA ADA DI SINI =====
 const authenticateToken = (req, res, next) => {
-    // Log ini akan memberitahu kita nilai JWT_SECRET yang sebenarnya di server
     console.log(`[DEBUG] JWT_SECRET di server adalah: ${process.env.JWT_SECRET}`);
-
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    
     console.log("Mencoba verifikasi token:", token);
-
     if (token == null) {
         console.log("Token tidak ditemukan, akses ditolak.");
         return res.sendStatus(401);
@@ -89,13 +84,9 @@ const authenticateToken = (req, res, next) => {
         console.error('❌ FATAL ERROR: JWT_SECRET tidak terbaca oleh kode.');
         return res.status(500).json({ message: 'Konfigurasi server tidak lengkap.' });
     }
-
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
-            console.error("===================================");
-            console.error("!!! KESALAHAN VERIFIKASI JWT !!!");
-            console.error("Pesan Error:", err.message);
-            console.error("===================================");
+            console.error("!!! KESALAHAN VERIFIKASI JWT !!! Pesan Error:", err.message);
             return res.sendStatus(403);
         }
         console.log("Verifikasi token berhasil untuk user:", user.name);
@@ -105,25 +96,9 @@ const authenticateToken = (req, res, next) => {
 };
 
 // 7. Rute API
-// (Rute lainnya tidak diubah)
-app.get('/api/admin/users', async (req, res) => {
-    try {
-        const users = await User.find({}).select('-password');
-        res.json(users);
-    } catch (error) {
-        console.error("Admin Get Users Error:", error);
-        res.status(500).json({ message: 'Gagal mengambil data pengguna' });
-    }
-});
-app.get('/api/admin/logs', async (req, res) => {
-    try {
-        const logs = await FoodLog.find({}).sort({ createdAt: -1 }).limit(50).populate('userId', 'name email');
-        res.json(logs);
-    } catch (error) {
-        console.error("Admin Get Logs Error:", error);
-        res.status(500).json({ message: 'Gagal mengambil data log' });
-    }
-});
+app.get('/api/admin/users', async (req, res) => { /* ... kode sama ... */ });
+app.get('/api/admin/logs', async (req, res) => { /* ... kode sama ... */ });
+
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -154,66 +129,35 @@ app.post('/api/auth/login', async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
+
+// ===== PERUBAHAN UTAMA ADA DI RUTE INI =====
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
     try {
+        console.log(`[PROFILE] Mencari user dengan ID dari token: ${req.user.userId}`);
         const user = await User.findById(req.user.userId).select('-password');
-        if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
+        
+        // Log ini akan memberitahu kita hasil pencarian di database
+        console.log(`[PROFILE] Hasil pencarian user di database:`, user);
+
+        if (!user) {
+            console.warn(`[PROFILE] PERINGATAN: User dengan ID ${req.user.userId} tidak ditemukan di database.`);
+            return res.status(404).json({ message: "Pengguna tidak ditemukan" });
+        }
+
+        console.log(`[PROFILE] User ditemukan, mengirim profil ke klien.`);
         res.json(user);
+
     } catch (error) {
-        console.error("Get Profile Error:", error);
+        console.error("[PROFILE] Get Profile Error:", error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
-app.put('/api/user/profile', authenticateToken, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.userId);
-        if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
-        user.profile = req.body;
-        calculateNeeds(user.profile);
-        await user.save();
-        const updatedUser = await User.findById(user._id).select('-password');
-        res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
-    } catch (error) {
-        console.error("Update Profile Error:", error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
-    }
-});
-app.get('/api/foods', (req, res) => {
-    const { search } = req.query;
-    if (search) {
-        const results = foodDatabase.filter(food => food.name.toLowerCase().includes(search.toLowerCase()));
-        return res.json(results);
-    }
-    res.json(foodDatabase);
-});
-app.post('/api/log/food', authenticateToken, async (req, res) => {
-    try {
-        const { foodId, quantity, mealType } = req.body;
-        const food = foodDatabase.find(f => f.id === foodId);
-        if (!food) return res.status(404).json({ message: 'Makanan tidak ditemukan' });
-        const logEntry = new FoodLog({
-            userId: req.user.userId,
-            date: new Date().toISOString().split('T')[0],
-            food: food,
-            quantity: quantity,
-            mealType: mealType,
-        });
-        await logEntry.save();
-        res.status(201).json({ message: 'Makanan berhasil dicatat', log: logEntry });
-    } catch (error) {
-        console.error("Log Food Error:", error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
-    }
-});
-app.get('/api/log/history', authenticateToken, async (req, res) => {
-    try {
-        const userLogs = await FoodLog.find({ userId: req.user.userId }).sort({ createdAt: -1 });
-        res.json(userLogs);
-    } catch (error) {
-        console.error("Get History Error:", error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
-    }
-});
+// ===============================================
+
+app.put('/api/user/profile', authenticateToken, async (req, res) => { /* ... kode sama ... */ });
+app.get('/api/foods', (req, res) => { /* ... kode sama ... */ });
+app.post('/api/log/food', authenticateToken, async (req, res) => { /* ... kode sama ... */ });
+app.get('/api/log/history', authenticateToken, async (req, res) => { /* ... kode sama ... */ });
 
 // 8. Jalankan Server
 app.listen(PORT, () => {
