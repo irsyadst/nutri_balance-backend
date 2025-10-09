@@ -1,27 +1,32 @@
-// 1. Import Dependencies
-require('dotenv').config(); // Load environment variables from .env file
+// 1. Impor Dependensi
+require('dotenv').config(); // Muat variabel lingkungan dari file .env
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 
-// 2. Initial Setup
+// 2. Pengaturan Awal
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
 const MONGO_URI = process.env.MONGO_URI;
 
 // 3. Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
-// 4. Database Connection
-mongoose.connect(MONGO_URI)
-    .then(() => console.log('✅ Database MongoDB connected successfully'))
-    .catch(err => console.error('❌ Database connection error:', err));
+app.use(cors()); // Mengizinkan permintaan dari domain lain
+app.use(express.json()); // Mem-parsing body permintaan sebagai JSON
+app.use(express.static('public')); // Menyajikan file statis dari folder 'public'
 
-// 5. Mongoose Schemas & Models (Struktur Data untuk Database)
+// 4. Koneksi ke Database
+if (!MONGO_URI) {
+    console.error('❌ FATAL ERROR: MONGO_URI tidak ditemukan di environment variables.');
+    process.exit(1); // Keluar dari aplikasi jika koneksi DB tidak ada
+}
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('✅ Database MongoDB berhasil tersambung'))
+    .catch(err => console.error('❌ Kesalahan koneksi database:', err));
+
+// 5. Skema & Model Mongoose (Struktur Data untuk Database)
 const UserProfileSchema = new mongoose.Schema({
     gender: String,
     age: Number,
@@ -37,7 +42,7 @@ const UserProfileSchema = new mongoose.Schema({
 
 const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
     profile: UserProfileSchema,
 });
@@ -57,11 +62,11 @@ const FoodLogSchema = new mongoose.Schema({
     },
     quantity: { type: Number, required: true },
     mealType: { type: String, required: true },
-});
+}, { timestamps: true }); // Menambahkan createdAt & updatedAt secara otomatis
 
 const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
 
-// Data makanan statis, tidak perlu database untuk ini di awal
+// Database makanan statis
 const foodDatabase = [
     { id: '1', name: 'Nasi Putih (100g)', calories: 130, proteins: 3, carbs: 28, fats: 0 },
     { id: '2', name: 'Dada Ayam Bakar (100g)', calories: 165, proteins: 31, carbs: 0, fats: 4 },
@@ -71,9 +76,9 @@ const foodDatabase = [
 ];
 
 
-// 6. Helper Functions & Middleware
+// 6. Fungsi Bantuan & Middleware
 const calculateNeeds = (profile) => {
-    // ... (Fungsi ini tidak berubah)
+    // Fungsi ini tidak berubah
     if (!profile || !profile.weight || !profile.height || !profile.age) return;
     let bmr;
     if (profile.gender === 'Pria') { bmr = 88.362 + (13.397 * profile.weight) + (4.799 * profile.height) - (5.677 * profile.age); } else { bmr = 447.593 + (9.247 * profile.weight) + (3.098 * profile.height) - (4.330 * profile.age); }
@@ -90,111 +95,124 @@ const calculateNeeds = (profile) => {
 };
 
 const authenticateToken = (req, res, next) => {
-    // ... (Middleware ini tidak berubah)
+    // Middleware untuk memverifikasi token JWT
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    if (token == null) return res.sendStatus(401);
+    if (token == null) return res.sendStatus(401); // Unauthorized
+
+    if (!JWT_SECRET) {
+        console.error('❌ FATAL ERROR: JWT_SECRET tidak ditemukan di environment variables.');
+        return res.status(500).json({ message: 'Konfigurasi server tidak lengkap.' });
+    }
+
     jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403);
+        if (err) {
+            console.error("Kesalahan verifikasi JWT:", err.message);
+            return res.sendStatus(403); // Forbidden
+        }
         req.user = user;
         next();
     });
 };
 
 
-// 7. API Routes (Sekarang menggunakan Mongoose)
-// Tambahkan ini di bagian API Routes di server.js
+// 7. Rute API (API Routes)
 
-// == ADMIN ROUTES (Untuk Dashboard) ==
+// == Rute Admin (Untuk Dashboard) ==
 app.get('/api/admin/users', async (req, res) => {
     try {
-        // Mengambil semua user, tapi menghapus field password
         const users = await User.find({}).select('-password');
         res.json(users);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching users' });
+        console.error("Admin Get Users Error:", error);
+        res.status(500).json({ message: 'Gagal mengambil data pengguna' });
     }
 });
 
 app.get('/api/admin/logs', async (req, res) => {
     try {
-        // Mengambil 50 log terbaru dan menyertakan data user
-        const logs = await FoodLog.find({})
-            .sort({ _id: -1 }) // Urutkan dari yang terbaru
-            .limit(50)
-            .populate('userId', 'name email'); // Ambil nama & email dari user terkait
+        const logs = await FoodLog.find({}).sort({ createdAt: -1 }).limit(50).populate('userId', 'name email');
         res.json(logs);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching logs' });
+        console.error("Admin Get Logs Error:", error);
+        res.status(500).json({ message: 'Gagal mengambil data log' });
     }
 });
 
-// == AUTH ROUTES ==
+// == Rute Autentikasi ==
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
-        const existingUser = await User.findOne({ email });
+        if (!name || !email || !password) {
+            return res.status(400).json({ message: "Nama, email, dan password wajib diisi." });
+        }
+        const existingUser = await User.findOne({ email: email.toLowerCase() });
         if (existingUser) {
             return res.status(400).json({ message: 'Email sudah terdaftar' });
         }
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = new User({ name, email, password: hashedPassword });
+        const newUser = new User({ name, email: email.toLowerCase(), password: hashedPassword });
         await newUser.save();
         res.status(201).json({ message: 'Registrasi berhasil', userId: newUser._id });
     } catch (error) {
-        res.status(500).json({ message: 'Terjadi kesalahan pada server', error });
+        console.error("Register Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
 
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) { return res.status(400).json({ message: 'Email atau password salah' }); }
-        
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email dan password wajib diisi.' });
+        }
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            return res.status(401).json({ message: 'Email atau password salah' });
+        }
         const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) { return res.status(400).json({ message: 'Email atau password salah' }); }
-
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: 'Email atau password salah' });
+        }
         const token = jwt.sign({ userId: user._id, name: user.name }, JWT_SECRET, { expiresIn: '1d' });
         res.json({ message: 'Login berhasil', token });
     } catch (error) {
-        res.status(500).json({ message: 'Terjadi kesalahan pada server', error });
+        console.error("Login Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
 
-
-// == USER ROUTES ==
+// == Rute Pengguna (Diproteksi) ==
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId).select('-password');
-        if (!user) return res.status(404).json({ message: "User tidak ditemukan" });
+        if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
         res.json(user);
     } catch (error) {
-        res.status(500).json({ message: 'Terjadi kesalahan pada server', error });
+        console.error("Get Profile Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
 
 app.put('/api/user/profile', authenticateToken, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId);
-        if (!user) return res.status(404).json({ message: "User tidak ditemukan" });
+        if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
         
         user.profile = req.body;
         calculateNeeds(user.profile);
         await user.save();
         
-        // Kirim kembali user tanpa password
         const updatedUser = await User.findById(user._id).select('-password');
         res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
     } catch (error) {
-        res.status(500).json({ message: 'Terjadi kesalahan pada server', error });
+        console.error("Update Profile Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
 
-
-// == FOOD & LOGGING ROUTES ==
+// == Rute Makanan & Log ==
 app.get('/api/foods', (req, res) => {
-    // ... (Endpoint ini tidak berubah)
     const { search } = req.query;
     if (search) {
         const results = foodDatabase.filter(food => 
@@ -221,21 +239,24 @@ app.post('/api/log/food', authenticateToken, async (req, res) => {
         await logEntry.save();
         res.status(201).json({ message: 'Makanan berhasil dicatat', log: logEntry });
     } catch (error) {
-        res.status(500).json({ message: 'Terjadi kesalahan pada server', error });
+        console.error("Log Food Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
 
 app.get('/api/log/history', authenticateToken, async (req, res) => {
     try {
-        const userLogs = await FoodLog.find({ userId: req.user.userId });
+        const userLogs = await FoodLog.find({ userId: req.user.userId }).sort({ createdAt: -1 });
         res.json(userLogs);
     } catch (error) {
-        res.status(500).json({ message: 'Terjadi kesalahan pada server', error });
+        console.error("Get History Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
 
 
-// 8. Start the Server
+// 8. Jalankan Server
 app.listen(PORT, () => {
     console.log(`🚀 Server NutriBalance berjalan di http://localhost:${PORT}`);
 });
+
