@@ -52,13 +52,11 @@ const foodDatabase = [
     { id: '1', name: 'Nasi Putih (100g)', calories: 130, proteins: 3, carbs: 28, fats: 0 },
     { id: '2', name: 'Dada Ayam Bakar (100g)', calories: 165, proteins: 31, carbs: 0, fats: 4 },
     { id: '3', name: 'Telur Rebus (1 butir)', calories: 78, proteins: 6, carbs: 1, fats: 5 },
-    { id: '4', name: 'Tahu Goreng (50g)', calories: 80, proteins: 8, carbs: 2, fats: 5 },
-    { id: '5', name: 'Tempe Goreng (50g)', calories: 100, proteins: 9, carbs: 8, fats: 5 },
 ];
 
 // 6. Fungsi Bantuan & Middleware
 const calculateNeeds = (profile) => {
-    if (!profile || !profile.weight || !profile.height || !profile.age) return;
+    if (!profile) return;
     let bmr;
     if (profile.gender === 'Pria') { bmr = 88.362 + (13.397 * profile.weight) + (4.799 * profile.height) - (5.677 * profile.age); } else { bmr = 447.593 + (9.247 * profile.weight) + (3.098 * profile.height) - (4.330 * profile.age); }
     let activityMultiplier = 1.2;
@@ -75,10 +73,12 @@ const calculateNeeds = (profile) => {
 
 // ===== PERUBAHAN UTAMA ADA DI SINI =====
 const authenticateToken = (req, res, next) => {
+    // Log ini akan memberitahu kita nilai JWT_SECRET yang sebenarnya di server
+    console.log(`[DEBUG] JWT_SECRET di server adalah: ${process.env.JWT_SECRET}`);
+
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
     
-    // Log untuk melihat token yang diterima
     console.log("Mencoba verifikasi token:", token);
 
     if (token == null) {
@@ -86,26 +86,26 @@ const authenticateToken = (req, res, next) => {
         return res.sendStatus(401);
     }
     if (!JWT_SECRET) {
-        console.error('❌ FATAL ERROR: JWT_SECRET tidak ditemukan.');
+        console.error('❌ FATAL ERROR: JWT_SECRET tidak terbaca oleh kode.');
         return res.status(500).json({ message: 'Konfigurasi server tidak lengkap.' });
     }
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
-            // Log ini akan memberitahu kita kenapa verifikasi gagal
             console.error("===================================");
             console.error("!!! KESALAHAN VERIFIKASI JWT !!!");
             console.error("Pesan Error:", err.message);
             console.error("===================================");
             return res.sendStatus(403);
         }
+        console.log("Verifikasi token berhasil untuk user:", user.name);
         req.user = user;
         next();
     });
 };
-// 7. Rute API (API Routes)
 
-// == Rute Admin (Untuk Dashboard) ==
+// 7. Rute API
+// (Rute lainnya tidak diubah)
 app.get('/api/admin/users', async (req, res) => {
     try {
         const users = await User.find({}).select('-password');
@@ -115,7 +115,6 @@ app.get('/api/admin/users', async (req, res) => {
         res.status(500).json({ message: 'Gagal mengambil data pengguna' });
     }
 });
-
 app.get('/api/admin/logs', async (req, res) => {
     try {
         const logs = await FoodLog.find({}).sort({ createdAt: -1 }).limit(50).populate('userId', 'name email');
@@ -125,18 +124,12 @@ app.get('/api/admin/logs', async (req, res) => {
         res.status(500).json({ message: 'Gagal mengambil data log' });
     }
 });
-
-// == Rute Autentikasi ==
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
-        if (!name || !email || !password) {
-            return res.status(400).json({ message: "Nama, email, dan password wajib diisi." });
-        }
+        if (!name || !email || !password) return res.status(400).json({ message: "Semua field wajib diisi." });
         const existingUser = await User.findOne({ email: email.toLowerCase() });
-        if (existingUser) {
-            return res.status(400).json({ message: 'Email sudah terdaftar' });
-        }
+        if (existingUser) return res.status(400).json({ message: 'Email sudah terdaftar' });
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = new User({ name, email: email.toLowerCase(), password: hashedPassword });
         await newUser.save();
@@ -146,21 +139,14 @@ app.post('/api/auth/register', async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
-
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        if (!email || !password) {
-            return res.status(400).json({ message: 'Email dan password wajib diisi.' });
-        }
+        if (!email || !password) return res.status(400).json({ message: 'Email dan password wajib diisi.' });
         const user = await User.findOne({ email: email.toLowerCase() });
-        if (!user) {
-            return res.status(401).json({ message: 'Email atau password salah' });
-        }
+        if (!user) return res.status(401).json({ message: 'Email atau password salah' });
         const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-            return res.status(401).json({ message: 'Email atau password salah' });
-        }
+        if (!isPasswordValid) return res.status(401).json({ message: 'Email atau password salah' });
         const token = jwt.sign({ userId: user._id, name: user.name }, JWT_SECRET, { expiresIn: '1d' });
         res.json({ message: 'Login berhasil', token });
     } catch (error) {
@@ -168,8 +154,6 @@ app.post('/api/auth/login', async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
-
-// == Rute Pengguna (Diproteksi) ==
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId).select('-password');
@@ -180,16 +164,13 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
-
 app.put('/api/user/profile', authenticateToken, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId);
         if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
-        
         user.profile = req.body;
         calculateNeeds(user.profile);
         await user.save();
-        
         const updatedUser = await User.findById(user._id).select('-password');
         res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
     } catch (error) {
@@ -197,25 +178,19 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
-
-// == Rute Makanan & Log ==
 app.get('/api/foods', (req, res) => {
     const { search } = req.query;
     if (search) {
-        const results = foodDatabase.filter(food => 
-            food.name.toLowerCase().includes(search.toLowerCase())
-        );
+        const results = foodDatabase.filter(food => food.name.toLowerCase().includes(search.toLowerCase()));
         return res.json(results);
     }
     res.json(foodDatabase);
 });
-
 app.post('/api/log/food', authenticateToken, async (req, res) => {
     try {
         const { foodId, quantity, mealType } = req.body;
         const food = foodDatabase.find(f => f.id === foodId);
         if (!food) return res.status(404).json({ message: 'Makanan tidak ditemukan' });
-
         const logEntry = new FoodLog({
             userId: req.user.userId,
             date: new Date().toISOString().split('T')[0],
@@ -230,7 +205,6 @@ app.post('/api/log/food', authenticateToken, async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
-
 app.get('/api/log/history', authenticateToken, async (req, res) => {
     try {
         const userLogs = await FoodLog.find({ userId: req.user.userId }).sort({ createdAt: -1 });
@@ -240,7 +214,6 @@ app.get('/api/log/history', authenticateToken, async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 });
-
 
 // 8. Jalankan Server
 app.listen(PORT, () => {
