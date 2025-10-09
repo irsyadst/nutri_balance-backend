@@ -277,3 +277,4 @@ app.get('/api/log/history', authenticateToken, async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Server NutriBalance berjalan di http://localhost:${PORT}`);
 });
+
