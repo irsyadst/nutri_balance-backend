@@ -1,5 +1,5 @@
 // 1. Impor Dependensi
-require('dotenv').config(); // Muat variabel lingkungan dari file .env
+require('dotenv').config(); 
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -13,60 +13,41 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const MONGO_URI = process.env.MONGO_URI;
 
 // 3. Middleware
-app.use(cors()); // Mengizinkan permintaan dari domain lain
-app.use(express.json()); // Mem-parsing body permintaan sebagai JSON
-app.use(express.static('public')); // Menyajikan file statis dari folder 'public'
+app.use(cors()); 
+app.use(express.json()); 
+app.use(express.static('public')); 
 
 // 4. Koneksi ke Database
 if (!MONGO_URI) {
     console.error('❌ FATAL ERROR: MONGO_URI tidak ditemukan di environment variables.');
-    process.exit(1); // Keluar dari aplikasi jika koneksi DB tidak ada
+    process.exit(1); 
 }
 mongoose.connect(MONGO_URI)
     .then(() => console.log('✅ Database MongoDB berhasil tersambung'))
     .catch(err => console.error('❌ Kesalahan koneksi database:', err));
 
-// 5. Skema & Model Mongoose (Struktur Data untuk Database)
+// 5. Skema & Model Mongoose
 const UserProfileSchema = new mongoose.Schema({
-    gender: String,
-    age: Number,
-    weight: Number,
-    height: Number,
-    activityLevel: String,
-    goal: String,
-    targetCalories: Number,
-    targetProteins: Number,
-    targetCarbs: Number,
-    targetFats: Number,
+    gender: String, age: Number, weight: Number, height: Number,
+    activityLevel: String, goal: String, targetCalories: Number,
+    targetProteins: Number, targetCarbs: Number, targetFats: Number,
 });
-
 const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
     profile: UserProfileSchema,
 });
-
 const User = mongoose.model('User', UserSchema);
-
 const FoodLogSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    date: { type: String, required: true }, // Format YYYY-MM-DD
-    food: {
-        id: String,
-        name: String,
-        calories: Number,
-        proteins: Number,
-        carbs: Number,
-        fats: Number,
-    },
+    date: { type: String, required: true },
+    food: { id: String, name: String, calories: Number, proteins: Number, carbs: Number, fats: Number },
     quantity: { type: Number, required: true },
     mealType: { type: String, required: true },
-}, { timestamps: true }); // Menambahkan createdAt & updatedAt secara otomatis
-
+}, { timestamps: true });
 const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
 
-// Database makanan statis
 const foodDatabase = [
     { id: '1', name: 'Nasi Putih (100g)', calories: 130, proteins: 3, carbs: 28, fats: 0 },
     { id: '2', name: 'Dada Ayam Bakar (100g)', calories: 165, proteins: 31, carbs: 0, fats: 4 },
@@ -75,10 +56,8 @@ const foodDatabase = [
     { id: '5', name: 'Tempe Goreng (50g)', calories: 100, proteins: 9, carbs: 8, fats: 5 },
 ];
 
-
 // 6. Fungsi Bantuan & Middleware
 const calculateNeeds = (profile) => {
-    // Fungsi ini tidak berubah
     if (!profile || !profile.weight || !profile.height || !profile.age) return;
     let bmr;
     if (profile.gender === 'Pria') { bmr = 88.362 + (13.397 * profile.weight) + (4.799 * profile.height) - (5.677 * profile.age); } else { bmr = 447.593 + (9.247 * profile.weight) + (3.098 * profile.height) - (4.330 * profile.age); }
@@ -94,28 +73,36 @@ const calculateNeeds = (profile) => {
     profile.targetFats = Math.round((tdee * 0.30) / 9);
 };
 
+// ===== PERUBAHAN UTAMA ADA DI SINI =====
 const authenticateToken = (req, res, next) => {
-    // Middleware untuk memverifikasi token JWT
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    if (token == null) return res.sendStatus(401); // Unauthorized
+    
+    // Log untuk melihat token yang diterima
+    console.log("Mencoba verifikasi token:", token);
 
+    if (token == null) {
+        console.log("Token tidak ditemukan, akses ditolak.");
+        return res.sendStatus(401);
+    }
     if (!JWT_SECRET) {
-        console.error('❌ FATAL ERROR: JWT_SECRET tidak ditemukan di environment variables.');
+        console.error('❌ FATAL ERROR: JWT_SECRET tidak ditemukan.');
         return res.status(500).json({ message: 'Konfigurasi server tidak lengkap.' });
     }
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
-            console.error("Kesalahan verifikasi JWT:", err.message);
-            return res.sendStatus(403); // Forbidden
+            // Log ini akan memberitahu kita kenapa verifikasi gagal
+            console.error("===================================");
+            console.error("!!! KESALAHAN VERIFIKASI JWT !!!");
+            console.error("Pesan Error:", err.message);
+            console.error("===================================");
+            return res.sendStatus(403);
         }
         req.user = user;
         next();
     });
 };
-
-
 // 7. Rute API (API Routes)
 
 // == Rute Admin (Untuk Dashboard) ==
