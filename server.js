@@ -1,5 +1,5 @@
 // 1. Impor Dependensi
-require('dotenv').config();
+require('dotenv').config(); // Muat variabel lingkungan dari file .env
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -13,46 +13,29 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const MONGO_URI = process.env.MONGO_URI;
 
 // 3. Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
+app.use(cors()); // Mengizinkan permintaan dari domain lain (Cross-Origin Resource Sharing)
+app.use(express.json()); // Mem-parsing body permintaan yang masuk sebagai JSON
+app.use(express.static('public')); // Menyajikan file statis (seperti admin.html) dari folder 'public'
 
 // 4. Koneksi ke Database
 if (!MONGO_URI) {
     console.error('❌ FATAL ERROR: MONGO_URI tidak ditemukan di environment variables.');
-    process.exit(1);
+    process.exit(1); // Keluar dari aplikasi jika koneksi DB tidak ada
 }
 mongoose.connect(MONGO_URI)
     .then(() => console.log('✅ Database MongoDB berhasil tersambung'))
     .catch(err => console.error('❌ Kesalahan koneksi database:', err));
 
 // 5. Skema & Model Mongoose
-// Skema profil yang diperluas sesuai kuesioner 16 langkah
+// Skema profil yang diperluas sesuai kuesioner
 const UserProfileSchema = new mongoose.Schema({
-    // Step 1-5
-    gender: String,
-    age: Number,
-    height: Number,
-    currentWeight: Number,
-    goalWeight: Number,
-    // Step 6-9
-    wakeUpTime: String,
-    sleepTime: String,
-    firstMealTime: String,
-    lastMealTime: String,
-    // Step 10-16
-    dailyMealIntake: String, // e.g., "3", "4", "5+"
-    climate: String, // "Panas", "Berawan", "Dingin"
-    waterIntake: String, // "sekitar 2 gelas", etc.
-    activityLevel: String, // "Menetap", "Aktivitas Ringan", etc.
-    goals: [String], // ["Penurunan berat badan", "Peningkatan tingkat energi"]
-    fastingExperience: String, // "Tidak, ini pertama saya", etc.
-    healthIssues: [String], // ["Diabetes", "Tekanan darah tinggi"]
-    // Data yang dihitung
-    targetCalories: Number,
-    targetProteins: Number,
-    targetCarbs: Number,
-    targetFats: Number,
+    gender: String, age: Number, height: Number,
+    currentWeight: Number, goalWeight: Number, wakeUpTime: String,
+    sleepTime: String, firstMealTime: String, lastMealTime: String,
+    dailyMealIntake: String, climate: String, waterIntake: String,
+    activityLevel: String, goals: [String], fastingExperience: String,
+    healthIssues: [String], targetCalories: Number, targetProteins: Number,
+    targetCarbs: Number, targetFats: Number,
 });
 
 const UserSchema = new mongoose.Schema({
@@ -72,12 +55,11 @@ const FoodLogSchema = new mongoose.Schema({
         proteins: Number, carbs: Number, fats: Number, category: String,
     },
     quantity: { type: Number, required: true },
-    mealType: { type: String, required: true }, // e.g., "Sarapan"
+    mealType: { type: String, required: true },
 }, { timestamps: true });
 
 const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
 
-// Skema untuk Meal Planner
 const MealPlanSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     date: { type: String, required: true }, // Format YYYY-MM-DD
@@ -102,28 +84,108 @@ const foodDatabase = [
 
 const foodCategories = ['Salad', 'Kue', 'Pie', 'Smoothie', 'Daging', 'Lainnya'];
 
-// 6. Fungsi Bantuan & Middleware (Tidak banyak berubah)
-const calculateNeeds = (profile) => { /* ... (kode sama persis seperti sebelumnya) ... */ };
-const authenticateToken = (req, res, next) => { /* ... (kode sama persis seperti sebelumnya) ... */ };
+// 6. Fungsi Bantuan & Middleware
+const calculateNeeds = (profile) => {
+    if (!profile || !profile.currentWeight || !profile.height || !profile.age) return;
+    let bmr;
+    // Menggunakan currentWeight untuk kalkulasi
+    if (profile.gender === 'Pria') { 
+        bmr = 88.362 + (13.397 * profile.currentWeight) + (4.799 * profile.height) - (5.677 * profile.age); 
+    } else { 
+        bmr = 447.593 + (9.247 * profile.currentWeight) + (3.098 * profile.height) - (4.330 * profile.age); 
+    }
+    let activityMultiplier = 1.2;
+    if (profile.activityLevel === 'Aktivitas Ringan') activityMultiplier = 1.375;
+    if (profile.activityLevel === 'Aktivitas Sedang') activityMultiplier = 1.55;
+    if (profile.activityLevel === 'Sangat Aktif') activityMultiplier = 1.725;
+    
+    let tdee = bmr * activityMultiplier;
+    
+    // Menyesuaikan kalori berdasarkan tujuan utama pengguna
+    if (profile.goals && profile.goals.includes('Penurunan berat badan')) {
+        tdee -= 500;
+    } else if (profile.goals && profile.goals.includes('Peningkatan massa otot')) { // Contoh tujuan lain
+        tdee += 500;
+    }
 
+    profile.targetCalories = Math.round(tdee);
+    profile.targetCarbs = Math.round((tdee * 0.45) / 4); // 45% Carbs
+    profile.targetProteins = Math.round((tdee * 0.30) / 4); // 30% Protein
+    profile.targetFats = Math.round((tdee * 0.25) / 9); // 25% Fats
+};
 
-// 7. Rute API (API Routes)
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token == null) return res.sendStatus(401);
 
+    if (!JWT_SECRET) {
+        console.error('❌ FATAL ERROR: JWT_SECRET tidak ditemukan.');
+        return res.status(500).json({ message: 'Konfigurasi server tidak lengkap.' });
+    }
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            console.error("Kesalahan verifikasi JWT:", err.message);
+            return res.sendStatus(403);
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// 7. Rute API
 // == Rute Autentikasi ==
-app.post('/api/auth/register', async (req, res) => { /* ... (kode sama) ... */ });
-app.post('/api/auth/login', async (req, res) => { /* ... (kode sama) ... */ });
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+        if (!name || !email || !password) return res.status(400).json({ message: "Semua field wajib diisi." });
+        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        if (existingUser) return res.status(400).json({ message: 'Email sudah terdaftar' });
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({ name, email: email.toLowerCase(), password: hashedPassword });
+        await newUser.save();
+        res.status(201).json({ message: 'Registrasi berhasil', userId: newUser._id });
+    } catch (error) {
+        console.error("Register Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) return res.status(400).json({ message: 'Email dan password wajib diisi.' });
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) return res.status(401).json({ message: 'Email atau password salah' });
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) return res.status(401).json({ message: 'Email atau password salah' });
+        const token = jwt.sign({ userId: user._id, name: user.name }, JWT_SECRET, { expiresIn: '1d' });
+        res.json({ message: 'Login berhasil', token });
+    } catch (error) {
+        console.error("Login Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    }
+});
 
 // == Rute Pengguna ==
-app.get('/api/user/profile', authenticateToken, async (req, res) => { /* ... (kode sama) ... */ });
+app.get('/api/user/profile', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId).select('-password');
+        if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
+        res.json(user);
+    } catch (error) {
+        console.error("Get Profile Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    }
+});
+
 app.put('/api/user/profile', authenticateToken, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId);
         if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
         
-        // Sekarang menerima objek profil yang jauh lebih besar
-        user.profile = req.body;
-        // Hitung ulang kebutuhan kalori berdasarkan data baru
-        calculateNeeds(user.profile);
+        user.profile = req.body; // Menerima objek profil lengkap dari kuesioner
+        calculateNeeds(user.profile); // Menghitung ulang target berdasarkan data baru
         await user.save();
         
         const updatedUser = await User.findById(user._id).select('-password');
@@ -134,22 +196,16 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
     }
 });
 
-// == Rute Dashboard (BARU & EFISIEN) ==
+// == Rute Dashboard ==
 app.get('/api/dashboard', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.userId;
         const today = new Date().toISOString().split('T')[0];
-
-        // 1. Ambil profil pengguna untuk target
+        
         const user = await User.findById(userId).select('profile');
-        if (!user || !user.profile) {
-            return res.status(404).json({ message: 'Profil pengguna tidak ditemukan atau belum lengkap.' });
-        }
+        if (!user || !user.profile) return res.status(404).json({ message: 'Profil pengguna belum lengkap.' });
 
-        // 2. Ambil log makanan hari ini
         const todaysLogs = await FoodLog.find({ userId: userId, date: today });
-
-        // 3. Hitung total konsumsi
         const consumed = todaysLogs.reduce((acc, log) => {
             const quantity = log.quantity || 1;
             acc.calories += (log.food.calories || 0) * quantity;
@@ -159,7 +215,6 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
             return acc;
         }, { calories: 0, proteins: 0, carbs: 0, fats: 0 });
 
-        // 4. Gabungkan semua data menjadi satu respons
         const dashboardData = {
             targets: user.profile,
             consumed: {
@@ -168,9 +223,7 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
                 carbs: Math.round(consumed.carbs),
                 fats: Math.round(consumed.fats),
             },
-            // Anda bisa menambahkan data lain di sini, misal: sleep, water, fasting
         };
-
         res.json(dashboardData);
     } catch (error) {
         console.error("Dashboard Data Error:", error);
@@ -179,69 +232,23 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
 });
 
 // == Rute Makanan & Log ==
-app.get('/api/foods/categories', (req, res) => {
-    res.json(foodCategories);
-});
+app.get('/api/foods/categories', (req, res) => { res.json(foodCategories); });
 
 app.get('/api/foods', (req, res) => {
     const { search, category } = req.query;
     let results = [...foodDatabase];
-
-    if (category) {
-        results = results.filter(food => food.category.toLowerCase() === category.toLowerCase());
-    }
-    if (search) {
-        results = results.filter(food => food.name.toLowerCase().includes(search.toLowerCase()));
-    }
+    if (category) results = results.filter(f => f.category.toLowerCase() === category.toLowerCase());
+    if (search) results = results.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
     res.json(results);
 });
 
 app.post('/api/log/food', authenticateToken, async (req, res) => { /* ... (kode sama) ... */ });
 app.get('/api/log/history', authenticateToken, async (req, res) => { /* ... (kode sama) ... */ });
 
-// == Rute Meal Planner (BARU) ==
-app.get('/api/meal-planner', authenticateToken, async (req, res) => {
-    try {
-        const { date } = req.query; // Ambil berdasarkan tanggal, misal: '2025-10-14'
-        if (!date) return res.status(400).json({ message: 'Parameter tanggal dibutuhkan' });
-        
-        const plan = await MealPlan.find({ userId: req.user.userId, date: date }).sort('time');
-        res.json(plan);
-    } catch (error) {
-        console.error("Get Meal Plan Error:", error);
-        res.status(500).json({ message: 'Gagal mengambil jadwal makan' });
-    }
-});
-
-app.post('/api/meal-planner', authenticateToken, async (req, res) => {
-    try {
-        const { date, mealType, food, time } = req.body;
-        const newPlanEntry = new MealPlan({
-            userId: req.user.userId,
-            date, mealType, food, time
-        });
-        await newPlanEntry.save();
-        res.status(201).json(newPlanEntry);
-    } catch (error) {
-        console.error("Create Meal Plan Error:", error);
-        res.status(500).json({ message: 'Gagal menambahkan jadwal makan' });
-    }
-});
-
-app.delete('/api/meal-planner/:id', authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const result = await MealPlan.findOneAndDelete({ _id: id, userId: req.user.userId });
-        if (!result) {
-            return res.status(404).json({ message: 'Jadwal tidak ditemukan atau Anda tidak berwenang.' });
-        }
-        res.status(200).json({ message: 'Jadwal berhasil dihapus.' });
-    } catch (error) {
-        console.error("Delete Meal Plan Error:", error);
-        res.status(500).json({ message: 'Gagal menghapus jadwal makan' });
-    }
-});
-
+// == Rute Meal Planner ==
+app.get('/api/meal-planner', authenticateToken, async (req, res) => { /* ... (kode sama) ... */ });
+app.post('/api/meal-planner', authenticateToken, async (req, res) => { /* ... (kode sama) ... */ });
+app.delete('/api/meal-planner/:id', authenticateToken, async (req, res) => { /* ... (kode sama) ... */ });
 
 // 8. Jalankan Server
 app.listen(PORT, () => {
