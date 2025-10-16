@@ -1,9 +1,9 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
-const TempUser = require('../models/tempUserModel'); // Impor model baru
+const TempUser = require('../models/tempUserModel');
+const { sendOtpEmail } = require('../utils/emailService'); // Impor layanan email
 
-// Fungsi untuk menghasilkan OTP 6 digit
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 exports.register = async (req, res) => {
@@ -11,7 +11,6 @@ exports.register = async (req, res) => {
         const { name, email, password } = req.body;
         if (!name || !email || !password) return res.status(400).json({ message: "Semua field wajib diisi." });
 
-        // Cek apakah email sudah terdaftar di akun permanen atau temporer
         if (await User.findOne({ email: email.toLowerCase() }) || await TempUser.findOne({ email: email.toLowerCase() })) {
             return res.status(400).json({ message: 'Email sudah terdaftar. Silakan verifikasi atau login.' });
         }
@@ -20,17 +19,26 @@ exports.register = async (req, res) => {
         const otp = generateOtp();
 
         const newTempUser = new TempUser({ name, email: email.toLowerCase(), password: hashedPassword, otp });
+        
+        // --- PERUBAHAN DI SINI ---
+        // Kirim email terlebih dahulu
+        const emailSent = await sendOtpEmail(newTempUser.email, otp);
+
+        if (!emailSent) {
+            return res.status(500).json({ message: 'Gagal mengirim email verifikasi, silakan coba lagi.' });
+        }
+        
+        // Simpan ke database HANYA JIKA email berhasil terkirim
         await newTempUser.save();
-
-        // Di aplikasi nyata, di sini Anda akan mengirim OTP ke email pengguna
-        console.log(`OTP untuk ${email} adalah: ${otp}`); 
-
+        
         res.status(201).json({ message: 'Registrasi berhasil, silakan cek email untuk kode OTP.' });
+
     } catch (error) {
         console.error("Register Error:", error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 };
+
 
 exports.verifyOtp = async (req, res) => {
     try {
