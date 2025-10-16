@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-// Skema disederhanakan agar sesuai dengan kuesioner baru
+// Skema disesuaikan dengan dua field baru
 const UserProfileSchema = new mongoose.Schema({
     // Data demografis dan fisik
     gender: String,
@@ -10,9 +10,10 @@ const UserProfileSchema = new mongoose.Schema({
     goalWeight: Number,
     activityLevel: String,
     
-    // Tujuan dan preferensi
-    goals: [String], // Contoh: ['Penurunan Berat Badan']
-    healthIssues: [String], // Digunakan untuk 'Preferensi Makanan'
+    // Tujuan dan preferensi (dipisahkan)
+    goals: [String], 
+    dietaryRestrictions: [String], // Field baru untuk pembatasan diet
+    allergies: [String],           // Field baru untuk alergi
     
     // Hasil kalkulasi server
     targetCalories: Number,
