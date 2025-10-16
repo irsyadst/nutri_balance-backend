@@ -2,7 +2,9 @@ const nodemailer = require('nodemailer');
 
 // Konfigurasi transporter untuk Nodemailer menggunakan kredensial dari .env
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com', // Host SMTP untuk Gmail
+    port: 465,              // Port SSL (lebih sering diizinkan)
+    secure: true,           // Menggunakan koneksi SSL
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
