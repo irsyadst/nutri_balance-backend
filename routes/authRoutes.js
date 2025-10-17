@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, verifyOtp } = require('../controllers/authController');
+const { register, login, verifyOtp, googleLogin } = require('../controllers/authController');
 
 router.post('/register', register);
-router.post('/verify-otp', verifyOtp); // Rute baru
+router.post('/verify-otp', verifyOtp);
 router.post('/login', login);
+router.post('/google', googleLogin); // Rute baru untuk Google Login
 
 module.exports = router;
