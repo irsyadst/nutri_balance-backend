@@ -93,7 +93,11 @@ exports.googleLogin = async (req, res) => {
         // Verifikasi token dengan server Google
         const ticket = await client.verifyIdToken({
             idToken: token,
-            audience: process.env.GOOGLE_CLIENT_ID,
+            // Sediakan SEMUA Client ID yang valid sebagai array di 'audience'
+            audience: [
+                process.env.GOOGLE_CLIENT_ID_WEB, // Client ID dari "Web application"
+                process.env.GOOGLE_CLIENT_ID_ANDROID, // Client ID BARU dari "Android"
+            ],
         });
 
         const { name, email, sub: googleId } = ticket.getPayload();
