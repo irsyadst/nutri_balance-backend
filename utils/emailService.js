@@ -1,14 +1,13 @@
 const Brevo = require('@getbrevo/brevo');
 
-// 1. Dapatkan instance default dari ApiClient
-const defaultClient = Brevo.ApiClient.instance;
-
-// 2. Konfigurasi autentikasi 'api-key'
-let apiKey = defaultClient.authentications['api-key'];
-apiKey.apiKey = process.env.BREVO_API_KEY;
-
-// 3. Buat instance dari TransactionalEmailsApi SETELAH autentikasi dikonfigurasi
+// 1. Buat instance dari API yang ingin digunakan (dalam kasus ini, email transaksional)
 const apiInstance = new Brevo.TransactionalEmailsApi();
+
+// 2. Dapatkan objek autentikasi dari instance tersebut
+let apiKey = apiInstance.authentications['apiKey']; // Gunakan 'apiKey' (bukan 'api-key')
+
+// 3. Atur kunci API Anda
+apiKey.apiKey = process.env.BREVO_API_KEY;
 
 /**
  * Mengirim email verifikasi OTP menggunakan Brevo
@@ -35,16 +34,17 @@ const sendOtpEmail = async (to, otp) => {
         </html>`;
     sendSmtpEmail.sender = { 
         name: 'NutriBalance', 
-        email: 'noreply@nutribalance.dev' // Alamat ini bisa apa saja
+        email: 'noreply@nutribalance.dev' // Alamat ini bisa apa saja, Brevo akan menggantinya
     }; 
     sendSmtpEmail.to = [{ email: to }];
 
     try {
+        // Panggil metode pengiriman email PADA instance yang sudah dikonfigurasi
         await apiInstance.sendTransacEmail(sendSmtpEmail);
         console.log(`Email OTP Brevo berhasil dikirim ke ${to}`);
         return true;
     } catch (error) {
-        console.error(`Gagal mengirim email Brevo ke ${to}:`, error);
+        console.error(`Gagal mengirim email Brevo ke ${to}:`, error.body || error); // Tampilkan 'error.body' untuk detail
         return false;
     }
 };
