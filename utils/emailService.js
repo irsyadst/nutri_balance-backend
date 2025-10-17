@@ -1,8 +1,14 @@
 const Brevo = require('@getbrevo/brevo');
 
-// Konfigurasi API client Brevo
+// 1. Dapatkan instance default dari ApiClient
+const defaultClient = Brevo.ApiClient.instance;
+
+// 2. Konfigurasi autentikasi 'api-key'
+let apiKey = defaultClient.authentications['api-key'];
+apiKey.apiKey = process.env.BREVO_API_KEY;
+
+// 3. Buat instance dari TransactionalEmailsApi SETELAH autentikasi dikonfigurasi
 const apiInstance = new Brevo.TransactionalEmailsApi();
-apiInstance.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
 
 /**
  * Mengirim email verifikasi OTP menggunakan Brevo
@@ -29,7 +35,7 @@ const sendOtpEmail = async (to, otp) => {
         </html>`;
     sendSmtpEmail.sender = { 
         name: 'NutriBalance', 
-        email: 'noreply@nutribalance.app' // Alamat ini bisa apa saja, Brevo akan menggantinya dengan email akun Anda
+        email: 'noreply@nutribalance.dev' // Alamat ini bisa apa saja
     }; 
     sendSmtpEmail.to = [{ email: to }];
 
