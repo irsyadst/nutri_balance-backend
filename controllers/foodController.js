@@ -83,72 +83,63 @@ function calculatePlanScore(currentMacros, targetMacros) {
 }
 /**
  * Fungsi algoritma cerdas (Randomized Best-of-N).
- * Mencoba N kombinasi acak dan memilih yang terbaik.
- */
-/**
- * Fungsi algoritma cerdas (Randomized Best-of-N).
- * Mencoba N kombinasi acak dan memilih yang terbaik.
+ * [PERBAIKAN]: Sekarang mengembalikan array makanan untuk setiap porsi.
  */
 function generateSmartDailyPlan(dailyTargets, availableFoods) {
-    let bestPlan = { breakfast: null, lunch: null, dinner: null };
+    let bestPlan = { breakfast: [], lunch: [], dinner: [] }; // <-- Diubah menjadi array
     let bestScore = Infinity;
 
-    // --- PERBAIKAN LOGIKA: Pisahkan makanan berdasarkan komponen ---
+    // --- (Logika pemisahan kategori Anda sudah benar) ---
     const proteins = availableFoods.filter(f => ['Protein Hewani', 'Protein Nabati'].includes(f.category));
     const carbs = availableFoods.filter(f => ['Karbohidrat'].includes(f.category));
     const veggies = availableFoods.filter(f => ['Sayuran'].includes(f.category));
     const fruits = availableFoods.filter(f => ['Buah'].includes(f.category));
     const dairySnacks = availableFoods.filter(f => ['Susu & Olahan', 'Snack'].includes(f.category));
 
-    // --- Fallback jika ada kategori yang kosong ---
+    // --- (Fallback Anda sudah benar) ---
     if (proteins.length === 0) proteins.push(...availableFoods.filter(f => f.proteins > 5));
     if (carbs.length === 0) carbs.push(...availableFoods.filter(f => f.carbs > 10));
     if (veggies.length === 0) veggies.push(...availableFoods.filter(f => f.category === 'Buah' || f.calories < 100));
     if (fruits.length === 0) fruits.push(...availableFoods.filter(f => f.category === 'Buah' || f.calories < 150));
     if (dairySnacks.length === 0) dairySnacks.push(...availableFoods.filter(f => f.category === 'Snack' || f.calories < 200));
 
-    // Pastikan kita punya setidaknya satu makanan di setiap kategori fallback
-    if (proteins.length === 0 || carbs.length === 0 || veggies.length === 0 || fruits.length === 0 || dairySnacks.length === 0) {
-        // Jika data sangat minim, kembali ke logika acak total
-        console.error("[Generate] Data makanan tidak cukup untuk dibagi per kategori. Menggunakan fallback acak total.");
+    if (proteins.length === 0 || carbs.length === 0 || veggies.length === 0) {
+        console.error("[Generate] Data primer (protein/karbo/sayur) tidak cukup. Fallback.");
         const fallbackFood = availableFoods[Math.floor(Math.random() * availableFoods.length)];
-        return { breakfast: fallbackFood, lunch: fallbackFood, dinner: fallbackFood };
+        return { breakfast: [fallbackFood], lunch: [fallbackFood], dinner: [fallbackFood] };
     }
     // --------------------------------------------------------
 
     const getRandomFood = (foodList) => foodList[Math.floor(Math.random() * foodList.length)];
 
-    // Coba 200 kombinasi acak untuk menemukan yang terbaik
     for (let i = 0; i < 200; i++) {
-        
-        // --- PERBAIKAN LOGIKA: Buat "Piring Makanan" ---
         // Sarapan: 1 Karbo + 1 Buah/Susu
-        const breakfastCarb = getRandomFood(carbs);
-        const breakfastSide = getRandomFood(fruits.length > 0 ? fruits : dairySnacks);
+        const breakfastItems = [
+            getRandomFood(carbs),
+            getRandomFood(fruits.length > 0 ? fruits : dairySnacks)
+        ];
         
         // Makan Siang: 1 Protein + 1 Karbo + 1 Sayur
-        const lunchProtein = getRandomFood(proteins);
-        const lunchCarb = getRandomFood(carbs);
-        const lunchVeggie = getRandomFood(veggies);
-
-        // Makan Malam: 1 Protein + 1 Karbo + 1 Sayur
-        const dinnerProtein = getRandomFood(proteins);
-        const dinnerCarb = getRandomFood(carbs);
-        const dinnerVeggie = getRandomFood(veggies);
-
-        // Gabungkan rencana (ini adalah 8 item makanan, bukan 3)
-        const currentPlanItems = [
-            breakfastCarb, breakfastSide,
-            lunchProtein, lunchCarb, lunchVeggie,
-            dinnerProtein, dinnerCarb, dinnerVeggie
+        const lunchItems = [
+            getRandomFood(proteins),
+            getRandomFood(carbs),
+            getRandomFood(veggies)
         ];
 
+        // Makan Malam: 1 Protein + 1 Karbo + 1 Sayur
+        const dinnerItems = [
+            getRandomFood(proteins),
+            getRandomFood(carbs),
+            getRandomFood(veggies)
+        ];
+
+        // Gabungkan rencana (total 8 item)
+        const currentPlanItems = [...breakfastItems, ...lunchItems, ...dinnerItems];
+
         // Hitung total makro dari SEMUA item
-        const currentMacros = {
-            calories: 0, proteins: 0, carbs: 0, fats: 0,
-        };
+        const currentMacros = { calories: 0, proteins: 0, carbs: 0, fats: 0 };
         currentPlanItems.forEach(item => {
-            if (item) { // Pastikan item tidak null
+            if (item) { 
                 currentMacros.calories += item.calories;
                 currentMacros.proteins += item.proteins;
                 currentMacros.carbs += item.carbs;
@@ -156,74 +147,33 @@ function generateSmartDailyPlan(dailyTargets, availableFoods) {
             }
         });
 
-        // Hitung skornya
         const currentScore = calculatePlanScore(currentMacros, dailyTargets);
 
         if (currentScore < bestScore) {
             bestScore = currentScore;
-            // Simpan rencana dalam format yang diharapkan oleh 'exports.generateMealPlan'
-            // Kita akan gabungkan komponennya. Contoh: "Nasi dan Ayam Bakar"
-            // NOTE: Ini hanya untuk contoh, kita tetap simpan ID-nya di langkah 7
-            // Untuk sekarang, kita hanya perlu 3 makanan "utama" untuk disimpan.
-            // Kita akan pilih komponen utama dari setiap piring.
+            // --- PERBAIKAN PENYIMPANAN ---
+            // Simpan array itemnya, bukan objek "piring" baru
             bestPlan = { 
-                breakfast: breakfastCarb, // Makanan utama sarapan
-                lunch: lunchProtein,      // Makanan utama makan siang
-                dinner: dinnerProtein     // Makanan utama makan malam
+                breakfast: breakfastItems,
+                lunch: lunchItems,
+                dinner: dinnerItems
             };
-            
-            // --- PERBAIKAN SEBENARNYA ADA DI SINI ---
-            // Kita harus menyimpan SEMUA item, bukan hanya 3.
-            // Ini membutuhkan perubahan pada `exports.generateMealPlan`
-            // Mari kita sederhanakan: kita simpan 3 "piring"
-            
-            bestPlan = {
-                // "piring" sarapan:
-                breakfast: {
-                    _id: breakfastCarb._id, // Simpan ID item utama
-                    name: `${breakfastCarb.name} & ${breakfastSide.name}`,
-                    calories: breakfastCarb.calories + breakfastSide.calories,
-                    proteins: breakfastCarb.proteins + breakfastSide.proteins,
-                    carbs: breakfastCarb.carbs + breakfastSide.carbs,
-                    fats: breakfastCarb.fats + breakfastSide.fats,
-                    category: 'Sarapan' // Kategori baru: Piring
-                },
-                // "piring" makan siang:
-                lunch: {
-                    _id: lunchProtein._id, // Simpan ID item utama
-                    name: `${lunchProtein.name}, ${lunchCarb.name} & ${lunchVeggie.name}`,
-                    calories: lunchProtein.calories + lunchCarb.calories + lunchVeggie.calories,
-                    proteins: lunchProtein.proteins + lunchCarb.proteins + lunchVeggie.proteins,
-                    carbs: lunchProtein.carbs + lunchCarb.carbs + lunchVeggie.carbs,
-                    fats: lunchProtein.fats + lunchCarb.fats + lunchVeggie.fats,
-                    category: 'Makan Siang'
-                },
-                // "piring" makan malam:
-                dinner: {
-                    _id: dinnerProtein._id,
-                    name: `${dinnerProtein.name}, ${dinnerCarb.name} & ${dinnerVeggie.name}`,
-                    calories: dinnerProtein.calories + dinnerCarb.calories + dinnerVeggie.calories,
-                    proteins: dinnerProtein.proteins + dinnerCarb.proteins + dinnerVeggie.proteins,
-                    carbs: dinnerProtein.carbs + dinnerCarb.carbs + dinnerVeggie.carbs,
-                    fats: dinnerProtein.fats + dinnerCarb.fats + dinnerVeggie.fats,
-                    category: 'Makan Malam'
-                }
-            };
-            // ------------------------------------
+            // -----------------------------
         }
     }
 
-    // Jika setelah 200x tetap tidak menemukan (seharusnya tidak terjadi jika ada fallback)
-    if (!bestPlan.breakfast) {
+    // Fallback jika tidak ditemukan (seharusnya tidak terjadi)
+    if (bestPlan.breakfast.length === 0) {
         bestPlan = {
-            breakfast: getRandomFood(availableFoods),
-            lunch: getRandomFood(availableFoods),
-            dinner: getRandomFood(availableFoods)
+            breakfast: [getRandomFood(availableFoods)],
+            lunch: [getRandomFood(availableFoods)],
+            dinner: [getRandomFood(availableFoods)]
         };
     }
 
     return bestPlan;
 }
+
 exports.generateMealPlan = async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -248,7 +198,7 @@ exports.generateMealPlan = async (req, res) => {
         
         const dailyTargets = { targetCalories, targetProteins, targetCarbs, targetFats };
 
-        // 3. Buat Filter Query berdasarkan Pengecualian
+        // 3. Buat Filter Query
         const queryFilter = {};
         if (allergies && allergies.length > 0) {
             queryFilter.allergens = { $nin: allergies };
@@ -257,18 +207,18 @@ exports.generateMealPlan = async (req, res) => {
             queryFilter.dietaryTags = { $all: dietaryRestrictions };
         }
         
-        // 4. Ambil Makanan yang Sesuai Filter dari Database
+        // 4. Ambil Makanan yang Sesuai Filter
         const availableFoods = await Food.find(queryFilter);
-        if (availableFoods.length < 3) { // Butuh setidaknya 3 makanan berbeda
+        if (availableFoods.length < 5) { // Kita butuh lebih banyak variasi sekarang
             return res.status(400).json({ 
                 message: "Tidak cukup makanan di database yang cocok dengan pantangan dan alergi Anda." 
             });
         }
         
-        // 5. Tentukan Tanggal yang Akan di-Generate
+        // 5. Tentukan Tanggal
         const datesToGenerate = [];
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Set ke awal hari
+        today.setHours(0, 0, 0, 0); 
 
         if (period === 'today') {
             datesToGenerate.push(today.toISOString().split('T')[0]);
@@ -285,7 +235,6 @@ exports.generateMealPlan = async (req, res) => {
                 datesToGenerate.push(date.toISOString().split('T')[0]);
             }
         } else if (period === 'custom' && startDate && endDate) {
-            // --- LOGIKA UNTUK RENTANG TANGGAL CUSTOM ---
             let currentDate = new Date(startDate);
             currentDate.setHours(0, 0, 0, 0);
             const lastDate = new Date(endDate);
@@ -299,7 +248,6 @@ exports.generateMealPlan = async (req, res) => {
                 datesToGenerate.push(currentDate.toISOString().split('T')[0]);
                 currentDate.setDate(currentDate.getDate() + 1);
             }
-            // Batasi agar tidak berlebihan (misal: 30 hari)
             if (datesToGenerate.length > 30) {
                  return res.status(400).json({ message: "Rentang tanggal kustom tidak boleh lebih dari 30 hari." });
             }
@@ -309,7 +257,7 @@ exports.generateMealPlan = async (req, res) => {
             return res.status(400).json({ message: "Periode tidak valid atau rentang tanggal kustom tidak diisi." });
         }
 
-        // 6. Hapus Rencana Lama (jika ada) untuk tanggal tersebut
+        // 6. Hapus Rencana Lama
         await MealPlan.deleteMany({ 
             userId: userId, 
             date: { $in: datesToGenerate } 
@@ -318,14 +266,23 @@ exports.generateMealPlan = async (req, res) => {
         // 7. Buat Rencana Baru untuk Setiap Tanggal
         let newPlans = [];
         for (const date of datesToGenerate) {
-            // Panggil algoritma cerdas untuk setiap hari
+            // Panggil algoritma cerdas
             const plan = generateSmartDailyPlan(dailyTargets, availableFoods);
             
-            newPlans.push(
-                { userId, date, mealType: 'Sarapan', food: plan.breakfast._id, time: '08:00' },
-                { userId, date, mealType: 'Makan Siang', food: plan.lunch._id, time: '12:00' },
-                { userId, date, mealType: 'Makan Malam', food: plan.dinner._id, time: '19:00' }
-            );
+            // --- PERBAIKAN LOGIKA PENYIMPANAN ---
+            // Loop untuk Sarapan (2 item)
+            plan.breakfast.forEach(food => {
+                if (food) newPlans.push({ userId, date, mealType: 'Sarapan', food: food._id, time: '08:00' });
+            });
+            // Loop untuk Makan Siang (3 item)
+            plan.lunch.forEach(food => {
+                if (food) newPlans.push({ userId, date, mealType: 'Makan Siang', food: food._id, time: '12:00' });
+            });
+            // Loop untuk Makan Malam (3 item)
+            plan.dinner.forEach(food => {
+                if (food) newPlans.push({ userId, date, mealType: 'Makan Malam', food: food._id, time: '19:00' });
+            });
+            // --------------------------------------
         }
         
         // 8. Simpan Rencana Makan Baru ke Database
@@ -340,3 +297,4 @@ exports.generateMealPlan = async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan pada server saat membuat rencana makan' });
     }
 };
+
