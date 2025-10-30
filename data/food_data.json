@@ -1,0 +1,162 @@
+[
+  {
+    "name": "Nasi Putih (1 porsi, 100g)",
+    "calories": 130,
+    "proteins": 2.7,
+    "carbs": 28.2,
+    "fats": 0.3,
+    "category": "Karbohidrat",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Dada Ayam Bakar (100g)",
+    "calories": 165,
+    "proteins": 31,
+    "carbs": 0,
+    "fats": 3.6,
+    "category": "Protein Hewani",
+    "dietaryTags": ["Halal", "Keto"],
+    "allergens": []
+  },
+  {
+    "name": "Telur Rebus (1 butir)",
+    "calories": 78,
+    "proteins": 6,
+    "carbs": 0.6,
+    "fats": 5,
+    "category": "Protein Hewani",
+    "dietaryTags": ["Vegetarian", "Halal", "Keto", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Tahu Kukus (100g)",
+    "calories": 76,
+    "proteins": 8,
+    "carbs": 2.8,
+    "fats": 4.8,
+    "category": "Protein Nabati",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Keto"],
+    "allergens": ["Kedelai"]
+  },
+  {
+    "name": "Tempe Goreng (100g)",
+    "calories": 192,
+    "proteins": 19,
+    "carbs": 9,
+    "fats": 11,
+    "category": "Protein Nabati",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal"],
+    "allergens": ["Kedelai"]
+  },
+  {
+    "name": "Brokoli Rebus (1 cangkir)",
+    "calories": 55,
+    "proteins": 3.7,
+    "carbs": 11.2,
+    "fats": 0.6,
+    "category": "Sayuran",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Keto", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Bayam Tumis (1 cangkir)",
+    "calories": 41,
+    "proteins": 5.3,
+    "carbs": 6.4,
+    "fats": 0.5,
+    "category": "Sayuran",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Keto", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Apel (1 buah sedang)",
+    "calories": 95,
+    "proteins": 0.5,
+    "carbs": 25,
+    "fats": 0.3,
+    "category": "Buah",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Pisang (1 buah sedang)",
+    "calories": 105,
+    "proteins": 1.3,
+    "carbs": 27,
+    "fats": 0.4,
+    "category": "Buah",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Alpukat (100g)",
+    "calories": 160,
+    "proteins": 2,
+    "carbs": 9,
+    "fats": 15,
+    "category": "Buah",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Keto", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Salmon Panggang (100g)",
+    "calories": 208,
+    "proteins": 20,
+    "carbs": 0,
+    "fats": 13,
+    "category": "Protein Hewani",
+    "dietaryTags": ["Halal", "Keto", "Mediterania"],
+    "allergens": ["Kerang"]
+  },
+  {
+    "name": "Kacang Almond (30g)",
+    "calories": 164,
+    "proteins": 6,
+    "carbs": 6,
+    "fats": 14,
+    "category": "Snack",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Keto", "Mediterania"],
+    "allergens": ["Kacang"]
+  },
+  {
+    "name": "Yogurt Yunani Plain (100g)",
+    "calories": 59,
+    "proteins": 10,
+    "carbs": 3.6,
+    "fats": 0.4,
+    "category": "Susu & Olahan",
+    "dietaryTags": ["Vegetarian", "Halal", "Keto", "Mediterania"],
+    "allergens": ["Susu"]
+  },
+  {
+    "name": "Roti Gandum Utuh (1 lembar)",
+    "calories": 81,
+    "proteins": 3.4,
+    "carbs": 13.8,
+    "fats": 1.1,
+    "category": "Karbohidrat",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": ["Gluten"]
+  },
+  {
+    "name": "Susu Sapi (1 cangkir)",
+    "calories": 103,
+    "proteins": 8,
+    "carbs": 12,
+    "fats": 2.4,
+    "category": "Minuman",
+    "dietaryTags": ["Vegetarian", "Halal"],
+    "allergens": ["Susu"]
+  },
+  {
+    "name": "Susu Kedelai (1 cangkir)",
+    "calories": 80,
+    "proteins": 7,
+    "carbs": 4,
+    "fats": 4,
+    "category": "Minuman",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal"],
+    "allergens": ["Kedelai"]
+  }
+]

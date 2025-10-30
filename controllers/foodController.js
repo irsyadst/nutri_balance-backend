@@ -1,24 +1,29 @@
 const FoodLog = require('../models/foodLogModel');
 const MealPlan = require('../models/mealPlanModel');
+const Food = require('../models/foodModel'); 
+const User = require('../models/userModel');
 
-// Data makanan statis
-const foodDatabase = [
-    { id: '1', name: 'Nasi Putih (100g)', calories: 130, proteins: 3, carbs: 28, fats: 0, category: 'Lainnya' },
-    { id: '2', name: 'Dada Ayam Bakar (100g)', calories: 165, proteins: 31, carbs: 0, fats: 4, category: 'Daging' },
-    { id: '3', name: 'Telur Rebus (1 butir)', calories: 78, proteins: 6, carbs: 1, fats: 5, category: 'Lainnya' },
-    { id: '4', name: 'Salad Sayur', calories: 50, proteins: 2, carbs: 10, fats: 1, category: 'Salad' },
-    { id: '5', name: 'Honey Pancake', calories: 180, proteins: 5, carbs: 30, fats: 4, category: 'Kue' },
-];
-const foodCategories = ['Salad', 'Kue', 'Pie', 'Smoothie', 'Daging', 'Lainnya'];
+exports.getFoodCategories = async (req, res) => {
+    try {
+        const categories = await Food.distinct('category');
+        res.json(categories);
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal mengambil kategori' });
+    }
+};
 
-exports.getFoodCategories = (req, res) => res.json(foodCategories);
+exports.searchFoods = async (req, res) => {
+    try {
+        const { search, category } = req.query;
+        let query = {};
+        if (category) query.category = category;
+        if (search) query.name = new RegExp(search, 'i'); // Case-insensitive search
 
-exports.searchFoods = (req, res) => {
-    const { search, category } = req.query;
-    let results = [...foodDatabase];
-    if (category) results = results.filter(f => f.category.toLowerCase() === category.toLowerCase());
-    if (search) results = results.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
-    res.json(results);
+        const results = await Food.find(query).limit(50); // Batasi hasil
+        res.json(results);
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal mencari makanan' });
+    }
 };
 
 exports.logFood = async (req, res) => {
@@ -55,5 +60,94 @@ exports.getMealPlan = async (req, res) => {
     } catch (error) {
         console.error("Get Meal Plan Error:", error);
         res.status(500).json({ message: 'Gagal mengambil jadwal makan' });
+    }
+};
+exports.generateMealPlan = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        // Ambil data periode dari frontend
+        const { period, startDate, endDate } = req.body; 
+
+        // 1. Ambil Profil User (untuk Target & Restriksi)
+        const user = await User.findById(userId);
+        if (!user || !user.profile) {
+            return res.status(404).json({ message: "Profil pengguna tidak ditemukan." });
+        }
+
+        const profile = user.profile;
+        const { 
+            targetCalories, targetProteins, targetCarbs, targetFats,
+            dietaryRestrictions, allergies 
+        } = profile;
+
+        // 2. Buat Filter Query berdasarkan Pengecualian
+        const queryFilter = {};
+
+        if (allergies && allergies.length > 0) {
+            // $nin = "not in". Mengecualikan makanan yang punya alergen ini.
+            queryFilter.allergens = { $nin: allergies };
+        }
+
+        if (dietaryRestrictions && dietaryRestrictions.length > 0) {
+            // $all = "all". Memastikan makanan memiliki SEMUA tag diet ini.
+            // (Misal: jika user 'Vegan' dan 'Halal', makanan harus punya tag 'Vegan' DAN 'Halal')
+            queryFilter.dietaryTags = { $all: dietaryRestrictions };
+        }
+
+        // 3. Ambil Makanan yang Sesuai Filter
+        const availableFoods = await Food.find(queryFilter);
+        if (availableFoods.length === 0) {
+            return res.status(400).json({ message: "Tidak ada makanan yang sesuai dengan filter Anda. Perluas database Anda." });
+        }
+
+        // 4. Logika Generator (CONTOH SANGAT SEDERHANA)
+        // Algoritma ini hanya memilih secara acak. 
+        // Untuk hasil nyata, Anda perlu algoritma yang lebih kompleks (misal: Knapsack problem / optimasi)
+        // untuk mencocokkan kalori dan makro secara presisi.
+
+        // Tentukan target per porsi makan (Contoh: Pagi 30%, Siang 40%, Malam 30%)
+        const breakfastTarget = targetCalories * 0.3;
+        const lunchTarget = targetCalories * 0.4;
+        const dinnerTarget = targetCalories * 0.3;
+
+        // Fungsi helper sederhana untuk mencari makanan acak
+        const findFoodForMeal = (targetCals) => {
+            // Ini hanya memilih acak, TIDAK mencocokkan makro
+            // Anda harus memperbaikinya untuk mencocokkan targetProteins, targetCarbs, dll.
+            const food = availableFoods[Math.floor(Math.random() * availableFoods.length)];
+            return food; 
+        };
+
+        // Tentukan tanggal yang akan di-generate (logika ini perlu disesuaikan)
+        const datesToGenerate = []; 
+        if (period === 'today') {
+            datesToGenerate.push(new Date().toISOString().split('T')[0]);
+        }
+        // (Tambahkan logika untuk '3_days', '1_week', dan 'custom' di sini)
+
+        // Hapus rencana lama untuk tanggal tersebut (opsional)
+        await MealPlan.deleteMany({ userId: userId, date: { $in: datesToGenerate } });
+
+        // 5. Buat dan Simpan Rencana Makan Baru
+        let newPlans = [];
+        for (const date of datesToGenerate) {
+            const breakfastFood = findFoodForMeal(breakfastTarget);
+            const lunchFood = findFoodForMeal(lunchTarget);
+            const dinnerFood = findFoodForMeal(dinnerTarget);
+
+            newPlans.push(
+                { userId, date, mealType: 'Sarapan', food: breakfastFood, time: '08:00' },
+                { userId, date, mealType: 'Makan Siang', food: lunchFood, time: '12:00' },
+                { userId, date, mealType: 'Makan Malam', food: dinnerFood, time: '19:00' }
+            );
+        }
+
+        await MealPlan.insertMany(newPlans);
+
+        res.status(201).json({ message: 'Rencana makan berhasil dibuat!' });
+
+    } catch (error) {
+        console.error("Generate Meal Plan Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 };
