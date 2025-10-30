@@ -1,6 +1,6 @@
 const FoodLog = require('../models/foodLogModel');
 const MealPlan = require('../models/mealPlanModel');
-const Food = require('../models/foodModel'); 
+const Food = require('../models/foodModel');
 const User = require('../models/userModel');
 
 exports.getFoodCategories = async (req, res) => {
@@ -57,11 +57,11 @@ exports.getMealPlan = async (req, res) => {
         if (!date) {
             return res.status(400).json({ message: 'Query tanggal diperlukan.' });
         }
-        
+
         // Format tanggal ISO 'YYYY-MM-DD'
-        const plans = await MealPlan.find({ 
+        const plans = await MealPlan.find({
             userId: req.user.userId,
-            date: date 
+            date: date
         }).populate('food'); // 'populate' sangat penting untuk mengambil detail 'food'
 
         res.json(plans);
@@ -83,10 +83,10 @@ function calculatePlanScore(currentMacros, targetMacros) {
 }
 /**
  * Fungsi algoritma cerdas (Randomized Best-of-N).
- * [PERBAIKAN]: Sekarang mengembalikan array makanan untuk setiap porsi.
+ * [PERBAIKAN]: Sekarang menghitung dan mengembalikan 'quantity'.
  */
 function generateSmartDailyPlan(dailyTargets, availableFoods) {
-    let bestPlan = { breakfast: [], lunch: [], dinner: [] }; // <-- Diubah menjadi array
+    let bestPlan = { breakfast: [], lunch: [], dinner: [] }; // Diubah menjadi array
     let bestScore = Infinity;
 
     // --- (Logika pemisahan kategori Anda sudah benar) ---
@@ -106,74 +106,90 @@ function generateSmartDailyPlan(dailyTargets, availableFoods) {
     if (proteins.length === 0 || carbs.length === 0 || veggies.length === 0) {
         console.error("[Generate] Data primer (protein/karbo/sayur) tidak cukup. Fallback.");
         const fallbackFood = availableFoods[Math.floor(Math.random() * availableFoods.length)];
-        return { breakfast: [fallbackFood], lunch: [fallbackFood], dinner: [fallbackFood] };
+        return { breakfast: [{ food: fallbackFood, qty: 1 }], lunch: [{ food: fallbackFood, qty: 1 }], dinner: [{ food: fallbackFood, qty: 1 }] };
     }
     // --------------------------------------------------------
 
     const getRandomFood = (foodList) => foodList[Math.floor(Math.random() * foodList.length)];
 
+    // Coba 200 kombinasi acak untuk menemukan yang terbaik
     for (let i = 0; i < 200; i++) {
-        // Sarapan: 1 Karbo + 1 Buah/Susu
-        const breakfastItems = [
-            getRandomFood(carbs),
-            getRandomFood(fruits.length > 0 ? fruits : dairySnacks)
-        ];
-        
-        // Makan Siang: 1 Protein + 1 Karbo + 1 Sayur
-        const lunchItems = [
-            getRandomFood(proteins),
-            getRandomFood(carbs),
-            getRandomFood(veggies)
-        ];
 
-        // Makan Malam: 1 Protein + 1 Karbo + 1 Sayur
-        const dinnerItems = [
-            getRandomFood(proteins),
-            getRandomFood(carbs),
-            getRandomFood(veggies)
-        ];
+        // --- 1. Pilih 8 item makanan (seperti sebelumnya) ---
+        const breakfastItems = [getRandomFood(carbs), getRandomFood(fruits.length > 0 ? fruits : dairySnacks)];
+        const lunchItems = [getRandomFood(proteins), getRandomFood(carbs), getRandomFood(veggies)];
+        const dinnerItems = [getRandomFood(proteins), getRandomFood(carbs), getRandomFood(veggies)];
 
-        // Gabungkan rencana (total 8 item)
-        const currentPlanItems = [...breakfastItems, ...lunchItems, ...dinnerItems];
-
-        // Hitung total makro dari SEMUA item
-        const currentMacros = { calories: 0, proteins: 0, carbs: 0, fats: 0 };
-        currentPlanItems.forEach(item => {
-            if (item) { 
-                currentMacros.calories += item.calories;
-                currentMacros.proteins += item.proteins;
-                currentMacros.carbs += item.carbs;
-                currentMacros.fats += item.fats;
+        // --- 2. Hitung total kalori TANPA skala ---
+        const unscaledMacros = { calories: 0, proteins: 0, carbs: 0, fats: 0 };
+        [...breakfastItems, ...lunchItems, ...dinnerItems].forEach(item => {
+            if (item) {
+                unscaledMacros.calories += item.calories;
+                unscaledMacros.proteins += item.proteins;
+                unscaledMacros.carbs += item.carbs;
+                unscaledMacros.fats += item.fats;
             }
         });
 
-        const currentScore = calculatePlanScore(currentMacros, dailyTargets);
+        if (unscaledMacros.calories === 0) continue; // Hindari pembagian dengan nol
+
+        // --- 3. Hitung 'quantity' berdasarkan faktor skala kalori ---
+        let scalingFactor = dailyTargets.targetCalories / unscaledMacros.calories;
+        // Bulatkan ke 0.5 terdekat (misal: 1.58 -> 1.5, 1.8 -> 2.0)
+        let scaledQty = Math.round(scalingFactor * 2) / 2;
+        // Batasi quantity: minimal 1x, maksimal 3x (agar tidak absurd)
+        scaledQty = Math.max(1, Math.min(scaledQty, 3));
+
+        // --- 4. Hitung ulang makro DENGAN 'quantity' yang baru ---
+        const scaledMacros = { calories: 0, proteins: 0, carbs: 0, fats: 0 };
+        const applyMacros = (item, qty) => {
+            if (item) {
+                scaledMacros.calories += item.calories * qty;
+                scaledMacros.proteins += item.proteins * qty;
+                scaledMacros.carbs += item.carbs * qty;
+                scaledMacros.fats += item.fats * qty;
+            }
+        };
+
+        // Terapkan 'scaledQty' HANYA pada Karbohidrat dan Protein
+        applyMacros(breakfastItems[0], scaledQty); // [0] adalah Karbo
+        applyMacros(breakfastItems[1], 1.0);      // [1] adalah Sampingan (buah/susu)
+
+        applyMacros(lunchItems[0], scaledQty);     // [0] adalah Protein
+        applyMacros(lunchItems[1], scaledQty);     // [1] adalah Karbo
+        applyMacros(lunchItems[2], 1.0);          // [2] adalah Sayur
+
+        applyMacros(dinnerItems[0], scaledQty);    // [0] adalah Protein
+        applyMacros(dinnerItems[1], scaledQty);    // [1] adalah Karbo
+        applyMacros(dinnerItems[2], 1.0);         // [2] adalah Sayur
+
+        // --- 5. Hitung skor berdasarkan makro yang SUDAH DISESUAIKAN ---
+        const currentScore = calculatePlanScore(scaledMacros, dailyTargets);
 
         if (currentScore < bestScore) {
             bestScore = currentScore;
-            // --- PERBAIKAN PENYIMPANAN ---
-            // Simpan array itemnya, bukan objek "piring" baru
-            bestPlan = { 
-                breakfast: breakfastItems,
-                lunch: lunchItems,
-                dinner: dinnerItems
+            // --- 6. Simpan rencana terbaik (lengkap dengan 'food' dan 'qty'-nya) ---
+            bestPlan = {
+                breakfast: [
+                    { food: breakfastItems[0], qty: scaledQty },
+                    { food: breakfastItems[1], qty: 1.0 }
+                ],
+                lunch: [
+                    { food: lunchItems[0], qty: scaledQty },
+                    { food: lunchItems[1], qty: scaledQty },
+                    { food: lunchItems[2], qty: 1.0 }
+                ],
+                dinner: [
+                    { food: dinnerItems[0], qty: scaledQty },
+                    { food: dinnerItems[1], qty: scaledQty },
+                    { food: dinnerItems[2], qty: 1.0 }
+                ]
             };
-            // -----------------------------
         }
-    }
-
-    // Fallback jika tidak ditemukan (seharusnya tidak terjadi)
-    if (bestPlan.breakfast.length === 0) {
-        bestPlan = {
-            breakfast: [getRandomFood(availableFoods)],
-            lunch: [getRandomFood(availableFoods)],
-            dinner: [getRandomFood(availableFoods)]
-        };
     }
 
     return bestPlan;
 }
-
 exports.generateMealPlan = async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -186,16 +202,16 @@ exports.generateMealPlan = async (req, res) => {
         }
 
         const profile = user.profile;
-        const { 
+        const {
             targetCalories, targetProteins, targetCarbs, targetFats,
-            dietaryRestrictions, allergies 
+            dietaryRestrictions, allergies
         } = profile;
-        
+
         // 2. Validasi Target Kalori
         if (!targetCalories) {
-             return res.status(400).json({ message: "Target kalori Anda belum diatur di profil." });
+            return res.status(400).json({ message: "Target kalori Anda belum diatur di profil." });
         }
-        
+
         const dailyTargets = { targetCalories, targetProteins, targetCarbs, targetFats };
 
         // 3. Buat Filter Query
@@ -206,19 +222,19 @@ exports.generateMealPlan = async (req, res) => {
         if (dietaryRestrictions && dietaryRestrictions.length > 0) {
             queryFilter.dietaryTags = { $all: dietaryRestrictions };
         }
-        
+
         // 4. Ambil Makanan yang Sesuai Filter
         const availableFoods = await Food.find(queryFilter);
         if (availableFoods.length < 5) { // Kita butuh lebih banyak variasi sekarang
-            return res.status(400).json({ 
-                message: "Tidak cukup makanan di database yang cocok dengan pantangan dan alergi Anda." 
+            return res.status(400).json({
+                message: "Tidak cukup makanan di database yang cocok dengan pantangan dan alergi Anda."
             });
         }
-        
+
         // 5. Tentukan Tanggal
         const datesToGenerate = [];
         const today = new Date();
-        today.setHours(0, 0, 0, 0); 
+        today.setHours(0, 0, 0, 0);
 
         if (period === 'today') {
             datesToGenerate.push(today.toISOString().split('T')[0]);
@@ -229,7 +245,7 @@ exports.generateMealPlan = async (req, res) => {
                 datesToGenerate.push(date.toISOString().split('T')[0]);
             }
         } else if (period === '1_week') {
-             for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 7; i++) {
                 let date = new Date(today);
                 date.setDate(date.getDate() + i);
                 datesToGenerate.push(date.toISOString().split('T')[0]);
@@ -241,7 +257,7 @@ exports.generateMealPlan = async (req, res) => {
             lastDate.setHours(0, 0, 0, 0);
 
             if (currentDate > lastDate) {
-                 return res.status(400).json({ message: "Tanggal akhir tidak boleh sebelum tanggal mulai." });
+                return res.status(400).json({ message: "Tanggal akhir tidak boleh sebelum tanggal mulai." });
             }
 
             while (currentDate <= lastDate) {
@@ -249,7 +265,7 @@ exports.generateMealPlan = async (req, res) => {
                 currentDate.setDate(currentDate.getDate() + 1);
             }
             if (datesToGenerate.length > 30) {
-                 return res.status(400).json({ message: "Rentang tanggal kustom tidak boleh lebih dari 30 hari." });
+                return res.status(400).json({ message: "Rentang tanggal kustom tidak boleh lebih dari 30 hari." });
             }
         }
 
@@ -258,9 +274,9 @@ exports.generateMealPlan = async (req, res) => {
         }
 
         // 6. Hapus Rencana Lama
-        await MealPlan.deleteMany({ 
-            userId: userId, 
-            date: { $in: datesToGenerate } 
+        await MealPlan.deleteMany({
+            userId: userId,
+            date: { $in: datesToGenerate }
         });
 
         // 7. Buat Rencana Baru untuk Setiap Tanggal
@@ -268,28 +284,27 @@ exports.generateMealPlan = async (req, res) => {
         for (const date of datesToGenerate) {
             // Panggil algoritma cerdas
             const plan = generateSmartDailyPlan(dailyTargets, availableFoods);
-            
-            // --- PERBAIKAN LOGIKA PENYIMPANAN ---
-            // Loop untuk Sarapan (2 item)
-            plan.breakfast.forEach(food => {
-                if (food) newPlans.push({ userId, date, mealType: 'Sarapan', food: food._id, time: '08:00' });
+
+            // --- PERBAIKAN LOGIKA PENYIMPANAN (MENAMBAHKAN QUANTITY) ---
+            // Loop untuk Sarapan
+            plan.breakfast.forEach(item => {
+                if (item.food) newPlans.push({ userId, date, mealType: 'Sarapan', food: item.food._id, quantity: item.qty, time: '08:00' });
             });
-            // Loop untuk Makan Siang (3 item)
-            plan.lunch.forEach(food => {
-                if (food) newPlans.push({ userId, date, mealType: 'Makan Siang', food: food._id, time: '12:00' });
+            // Loop untuk Makan Siang
+            plan.lunch.forEach(item => {
+                if (item.food) newPlans.push({ userId, date, mealType: 'Makan Siang', food: item.food._id, quantity: item.qty, time: '12:00' });
             });
-            // Loop untuk Makan Malam (3 item)
-            plan.dinner.forEach(food => {
-                if (food) newPlans.push({ userId, date, mealType: 'Makan Malam', food: food._id, time: '19:00' });
+            // Loop untuk Makan Malam
+            plan.dinner.forEach(item => {
+                if (item.food) newPlans.push({ userId, date, mealType: 'Makan Malam', food: item.food._id, quantity: item.qty, time: '19:00' });
             });
             // --------------------------------------
         }
-        
         // 8. Simpan Rencana Makan Baru ke Database
         await MealPlan.insertMany(newPlans);
 
-        res.status(201).json({ 
-            message: `Rencana makan untuk ${datesToGenerate.length} hari berhasil dibuat!` 
+        res.status(201).json({
+            message: `Rencana makan untuk ${datesToGenerate.length} hari berhasil dibuat!`
         });
 
     } catch (error) {

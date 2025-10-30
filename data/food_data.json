@@ -158,5 +158,225 @@
     "category": "Minuman",
     "dietaryTags": ["Vegetarian", "Vegan", "Halal"],
     "allergens": ["Kedelai"]
+  },
+  {
+    "name": "Ikan Kembung Bakar (1 ekor, 100g)",
+    "calories": 125,
+    "proteins": 21.3,
+    "carbs": 0,
+    "fats": 3.4,
+    "category": "Protein Hewani",
+    "dietaryTags": ["Halal", "Keto", "Mediterania"],
+    "allergens": ["Kerang"]
+  },
+  {
+    "name": "Udang Rebus (100g)",
+    "calories": 99,
+    "proteins": 24,
+    "carbs": 0.2,
+    "fats": 0.3,
+    "category": "Protein Hewani",
+    "dietaryTags": ["Halal", "Keto"],
+    "allergens": ["Kerang"]
+  },
+  {
+    "name": "Daging Sapi Giling Tumis (100g)",
+    "calories": 250,
+    "proteins": 26,
+    "carbs": 0,
+    "fats": 15,
+    "category": "Protein Hewani",
+    "dietaryTags": ["Halal", "Keto"],
+    "allergens": []
+  },
+  {
+    "name": "Kacang Merah Rebus (1 cangkir, 170g)",
+    "calories": 225,
+    "proteins": 15,
+    "carbs": 40,
+    "fats": 0.8,
+    "category": "Protein Nabati",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Edamame Rebus (1 cangkir, 155g)",
+    "calories": 188,
+    "proteins": 18,
+    "carbs": 14,
+    "fats": 8,
+    "category": "Protein Nabati",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": ["Kedelai"]
+  },
+  {
+    "name": "Nasi Merah (1 porsi, 100g)",
+    "calories": 111,
+    "proteins": 2.6,
+    "carbs": 23,
+    "fats": 0.9,
+    "category": "Karbohidrat",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Kentang Rebus (1 buah sedang, 150g)",
+    "calories": 130,
+    "proteins": 3,
+    "carbs": 30,
+    "fats": 0.2,
+    "category": "Karbohidrat",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Ubi Jalar Panggang (100g)",
+    "calories": 90,
+    "proteins": 2,
+    "carbs": 21,
+    "fats": 0.1,
+    "category": "Karbohidrat",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Oatmeal (1/2 cangkir kering, 40g)",
+    "calories": 150,
+    "proteins": 5,
+    "carbs": 27,
+    "fats": 2.5,
+    "category": "Karbohidrat",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": ["Gluten"]
+  },
+  {
+    "name": "Roti Tawar Putih (1 lembar)",
+    "calories": 69,
+    "proteins": 2.7,
+    "carbs": 12.5,
+    "fats": 1,
+    "category": "Karbohidrat",
+    "dietaryTags": ["Vegetarian", "Halal"],
+    "allergens": ["Gluten", "Susu", "Kedelai"]
+  },
+  {
+    "name": "Kangkung Tumis (1 cangkir)",
+    "calories": 98,
+    "proteins": 3.2,
+    "carbs": 7,
+    "fats": 7.5,
+    "category": "Sayuran",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal"],
+    "allergens": []
+  },
+  {
+    "name": "Wortel Rebus (1 cangkir)",
+    "calories": 52,
+    "proteins": 1.2,
+    "carbs": 12,
+    "fats": 0.2,
+    "category": "Sayuran",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Keto", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Tomat (1 buah sedang)",
+    "calories": 22,
+    "proteins": 1.1,
+    "carbs": 4.8,
+    "fats": 0.2,
+    "category": "Sayuran",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Keto", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Timun (1/2 cangkir irisan)",
+    "calories": 8,
+    "proteins": 0.3,
+    "carbs": 1.9,
+    "fats": 0.1,
+    "category": "Sayuran",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Keto", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Mangga (1 cangkir potongan)",
+    "calories": 99,
+    "proteins": 1.4,
+    "carbs": 25,
+    "fats": 0.6,
+    "category": "Buah",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Jeruk (1 buah sedang)",
+    "calories": 62,
+    "proteins": 1.2,
+    "carbs": 15.4,
+    "fats": 0.2,
+    "category": "Buah",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Semangka (1 cangkir potongan)",
+    "calories": 46,
+    "proteins": 0.9,
+    "carbs": 11.5,
+    "fats": 0.2,
+    "category": "Buah",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Pepaya (1 cangkir potongan)",
+    "calories": 62,
+    "proteins": 0.7,
+    "carbs": 15.7,
+    "fats": 0.4,
+    "category": "Buah",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": []
+  },
+  {
+    "name": "Keju Cheddar (1 lembar, 28g)",
+    "calories": 113,
+    "proteins": 7,
+    "carbs": 1.4,
+    "fats": 9,
+    "category": "Susu & Olahan",
+    "dietaryTags": ["Vegetarian", "Halal", "Keto"],
+    "allergens": ["Susu"]
+  },
+  {
+    "name": "Kacang Tanah Goreng (30g)",
+    "calories": 170,
+    "proteins": 7,
+    "carbs": 6,
+    "fats": 14,
+    "category": "Snack",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Keto"],
+    "allergens": ["Kacang"]
+  },
+  {
+    "name": "Cokelat Hitam 70% (30g)",
+    "calories": 170,
+    "proteins": 2.2,
+    "carbs": 13,
+    "fats": 12,
+    "category": "Snack",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Mediterania"],
+    "allergens": ["Susu", "Kedelai"]
+  },
+  {
+    "name": "Kopi Hitam (1 cangkir)",
+    "calories": 2,
+    "proteins": 0.3,
+    "carbs": 0,
+    "fats": 0,
+    "category": "Minuman",
+    "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Keto", "Mediterania"],
+    "allergens": []
   }
 ]
