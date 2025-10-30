@@ -65,13 +65,30 @@ exports.getMealPlan = async (req, res) => {
 exports.generateMealPlan = async (req, res) => {
     try {
         const userId = req.user.userId;
-        // Ambil data periode dari frontend
-        const { period, startDate, endDate } = req.body; 
+        const { period, startDate, endDate } = req.body; // 'period' akan berisi 'today'
 
-        // 1. Ambil Profil User (untuk Target & Restriksi)
-        const user = await User.findById(userId);
-        if (!user || !user.profile) {
-            return res.status(404).json({ message: "Profil pengguna tidak ditemukan." });
+        console.log(`[Generate] Diminta oleh user ID: ${userId} untuk periode: ${period}`);
+
+        // --- PERBAIKAN ---
+        // Kita paksa query untuk mengambil 'profile' dan 'email' (untuk logging)
+        // Ini akan menyelesaikan masalah "Profil tidak ditemukan"
+        const user = await User.findById(userId).select('profile email');
+
+        // 1. Validasi User
+        if (!user) {
+            console.error('[Generate] ERROR: User TIDAK DITEMUKAN dengan ID tersebut.');
+            return res.status(404).json({ message: "User tidak ditemukan di database." });
+        }
+
+        console.log(`[Generate] User ditemukan: ${user.email}`);
+        
+        // Log untuk melihat apa yang didapat dari DB
+        console.log('[Generate] Mengecek user.profile...', user.profile); 
+        
+        // 2. Validasi Profil
+        if (!user.profile) {
+            console.error('[Generate] ERROR: User ditemukan, TAPI user.profile null atau undefined.');
+            return res.status(404).json({ message: "Profil pengguna tidak ditemukan. (Pastikan kuesioner sudah diisi)" });
         }
 
         const profile = user.profile;
@@ -79,75 +96,97 @@ exports.generateMealPlan = async (req, res) => {
             targetCalories, targetProteins, targetCarbs, targetFats,
             dietaryRestrictions, allergies 
         } = profile;
+        
+        // 3. Validasi Target Kalori
+        if (!targetCalories) {
+             console.error('[Generate] ERROR: Profile ada, TAPI targetCalories (null/0).');
+             return res.status(400).json({ message: "Target kalori Anda belum diatur di profil." });
+        }
+        console.log(`[Generate] Target Kalori: ${targetCalories} | Alergi: ${allergies} | Restriksi: ${dietaryRestrictions}`);
 
-        // 2. Buat Filter Query berdasarkan Pengecualian
+
+        // 4. Buat Filter Query berdasarkan Pengecualian
         const queryFilter = {};
 
         if (allergies && allergies.length > 0) {
             // $nin = "not in". Mengecualikan makanan yang punya alergen ini.
+            // Contoh: akan mengecualikan makanan dengan "Susu" atau "Kedelai"
             queryFilter.allergens = { $nin: allergies };
         }
 
         if (dietaryRestrictions && dietaryRestrictions.length > 0) {
             // $all = "all". Memastikan makanan memiliki SEMUA tag diet ini.
-            // (Misal: jika user 'Vegan' dan 'Halal', makanan harus punya tag 'Vegan' DAN 'Halal')
+            // Contoh: akan mencari makanan yang punya tag "Vegetarian" DAN "Halal"
             queryFilter.dietaryTags = { $all: dietaryRestrictions };
         }
-
-        // 3. Ambil Makanan yang Sesuai Filter
+        
+        // 5. Ambil Makanan yang Sesuai Filter dari Database
         const availableFoods = await Food.find(queryFilter);
+
         if (availableFoods.length === 0) {
-            return res.status(400).json({ message: "Tidak ada makanan yang sesuai dengan filter Anda. Perluas database Anda." });
+            console.error('[Generate] ERROR: Database tidak memiliki makanan yang cocok dengan filter.');
+            return res.status(400).json({ 
+                message: "Tidak ada makanan di database yang cocok dengan pantangan dan alergi Anda. Coba perbarui data makanan Anda." 
+            });
         }
+        console.log(`[Generate] Ditemukan ${availableFoods.length} makanan yang cocok.`);
 
-        // 4. Logika Generator (CONTOH SANGAT SEDERHANA)
-        // Algoritma ini hanya memilih secara acak. 
-        // Untuk hasil nyata, Anda perlu algoritma yang lebih kompleks (misal: Knapsack problem / optimasi)
-        // untuk mencocokkan kalori dan makro secara presisi.
+        
+        // 6. Tentukan Tanggal yang Akan di-Generate
+        const datesToGenerate = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Set ke awal hari
 
-        // Tentukan target per porsi makan (Contoh: Pagi 30%, Siang 40%, Malam 30%)
-        const breakfastTarget = targetCalories * 0.3;
-        const lunchTarget = targetCalories * 0.4;
-        const dinnerTarget = targetCalories * 0.3;
-
-        // Fungsi helper sederhana untuk mencari makanan acak
-        const findFoodForMeal = (targetCals) => {
-            // Ini hanya memilih acak, TIDAK mencocokkan makro
-            // Anda harus memperbaikinya untuk mencocokkan targetProteins, targetCarbs, dll.
-            const food = availableFoods[Math.floor(Math.random() * availableFoods.length)];
-            return food; 
-        };
-
-        // Tentukan tanggal yang akan di-generate (logika ini perlu disesuaikan)
-        const datesToGenerate = []; 
         if (period === 'today') {
-            datesToGenerate.push(new Date().toISOString().split('T')[0]);
+            datesToGenerate.push(today.toISOString().split('T')[0]);
+        } else if (period === '3_days') {
+            for (let i = 0; i < 3; i++) {
+                let date = new Date(today);
+                date.setDate(date.getDate() + i);
+                datesToGenerate.push(date.toISOString().split('T')[0]);
+            }
+        } else if (period === '1_week') {
+             for (let i = 0; i < 7; i++) {
+                let date = new Date(today);
+                date.setDate(date.getDate() + i);
+                datesToGenerate.push(date.toISOString().split('T')[0]);
+            }
         }
-        // (Tambahkan logika untuk '3_days', '1_week', dan 'custom' di sini)
+        // (Tambahkan 'custom' jika perlu, menggunakan startDate dan endDate)
 
-        // Hapus rencana lama untuk tanggal tersebut (opsional)
-        await MealPlan.deleteMany({ userId: userId, date: { $in: datesToGenerate } });
+        if (datesToGenerate.length === 0) {
+            return res.status(400).json({ message: "Periode tidak valid." });
+        }
 
-        // 5. Buat dan Simpan Rencana Makan Baru
+        // 7. Hapus Rencana Lama (jika ada) untuk tanggal tersebut
+        await MealPlan.deleteMany({ 
+            userId: userId, 
+            date: { $in: datesToGenerate } 
+        });
+
+        // 8. Logika Generator (Contoh Sederhana: Memilih Acak)
+        // TODO: Ganti ini dengan algoritma yang lebih cerdas untuk mencocokkan makro.
+        const findRandomFood = () => availableFoods[Math.floor(Math.random() * availableFoods.length)];
+        
         let newPlans = [];
         for (const date of datesToGenerate) {
-            const breakfastFood = findFoodForMeal(breakfastTarget);
-            const lunchFood = findFoodForMeal(lunchTarget);
-            const dinnerFood = findFoodForMeal(dinnerTarget);
-
             newPlans.push(
-                { userId, date, mealType: 'Sarapan', food: breakfastFood, time: '08:00' },
-                { userId, date, mealType: 'Makan Siang', food: lunchFood, time: '12:00' },
-                { userId, date, mealType: 'Makan Malam', food: dinnerFood, time: '19:00' }
+                { userId, date, mealType: 'Sarapan', food: findRandomFood(), time: '08:00' },
+                { userId, date, mealType: 'Makan Siang', food: findRandomFood(), time: '12:00' },
+                { userId, date, mealType: 'Makan Malam', food: findRandomFood(), time: '19:00' }
             );
         }
-
+        
+        // 9. Simpan Rencana Makan Baru ke Database
         await MealPlan.insertMany(newPlans);
 
-        res.status(201).json({ message: 'Rencana makan berhasil dibuat!' });
+        console.log(`[Generate] Berhasil! ${newPlans.length} item menu dibuat untuk user ${user.email}.`);
+        res.status(201).json({ 
+            message: `Rencana makan untuk ${datesToGenerate.length} hari berhasil dibuat!` 
+        });
 
     } catch (error) {
-        console.error("Generate Meal Plan Error:", error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+        console.error("Generate Meal Plan Server Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server saat membuat rencana makan' });
     }
 };
