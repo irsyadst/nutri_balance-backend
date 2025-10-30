@@ -85,53 +85,135 @@ function calculatePlanScore(currentMacros, targetMacros) {
  * Fungsi algoritma cerdas (Randomized Best-of-N).
  * Mencoba N kombinasi acak dan memilih yang terbaik.
  */
+/**
+ * Fungsi algoritma cerdas (Randomized Best-of-N).
+ * Mencoba N kombinasi acak dan memilih yang terbaik.
+ */
 function generateSmartDailyPlan(dailyTargets, availableFoods) {
     let bestPlan = { breakfast: null, lunch: null, dinner: null };
     let bestScore = Infinity;
 
-    // Pisahkan makanan berdasarkan kategori agar lebih masuk akal
-    // Anda bisa menyesuaikan kategori ini
-    const breakfastFoods = availableFoods.filter(f => 
-        ['Karbohidrat', 'Buah', 'Susu & Olahan', 'Snack', 'Protein Nabati', 'Protein Hewani'].includes(f.category)
-    );
-    const mainFoods = availableFoods.filter(f => 
-        ['Protein Hewani', 'Protein Nabati', 'Sayuran', 'Karbohidrat'].includes(f.category)
-    );
+    // --- PERBAIKAN LOGIKA: Pisahkan makanan berdasarkan komponen ---
+    const proteins = availableFoods.filter(f => ['Protein Hewani', 'Protein Nabati'].includes(f.category));
+    const carbs = availableFoods.filter(f => ['Karbohidrat'].includes(f.category));
+    const veggies = availableFoods.filter(f => ['Sayuran'].includes(f.category));
+    const fruits = availableFoods.filter(f => ['Buah'].includes(f.category));
+    const dairySnacks = availableFoods.filter(f => ['Susu & Olahan', 'Snack'].includes(f.category));
 
-    // Pastikan kita punya makanan di setiap kategori
-    if (breakfastFoods.length === 0 || mainFoods.length === 0) {
-        // Fallback ke makanan acak jika kategori tidak mencukupi
-        breakfastFoods.push(...availableFoods);
-        mainFoods.push(...availableFoods);
+    // --- Fallback jika ada kategori yang kosong ---
+    if (proteins.length === 0) proteins.push(...availableFoods.filter(f => f.proteins > 5));
+    if (carbs.length === 0) carbs.push(...availableFoods.filter(f => f.carbs > 10));
+    if (veggies.length === 0) veggies.push(...availableFoods.filter(f => f.category === 'Buah' || f.calories < 100));
+    if (fruits.length === 0) fruits.push(...availableFoods.filter(f => f.category === 'Buah' || f.calories < 150));
+    if (dairySnacks.length === 0) dairySnacks.push(...availableFoods.filter(f => f.category === 'Snack' || f.calories < 200));
+
+    // Pastikan kita punya setidaknya satu makanan di setiap kategori fallback
+    if (proteins.length === 0 || carbs.length === 0 || veggies.length === 0 || fruits.length === 0 || dairySnacks.length === 0) {
+        // Jika data sangat minim, kembali ke logika acak total
+        console.error("[Generate] Data makanan tidak cukup untuk dibagi per kategori. Menggunakan fallback acak total.");
+        const fallbackFood = availableFoods[Math.floor(Math.random() * availableFoods.length)];
+        return { breakfast: fallbackFood, lunch: fallbackFood, dinner: fallbackFood };
     }
+    // --------------------------------------------------------
 
     const getRandomFood = (foodList) => foodList[Math.floor(Math.random() * foodList.length)];
 
-    // Coba 100 kombinasi acak untuk menemukan yang terbaik
-    for (let i = 0; i < 100; i++) {
-        const breakfast = getRandomFood(breakfastFoods);
-        const lunch = getRandomFood(mainFoods);
-        const dinner = getRandomFood(mainFoods);
+    // Coba 200 kombinasi acak untuk menemukan yang terbaik
+    for (let i = 0; i < 200; i++) {
+        
+        // --- PERBAIKAN LOGIKA: Buat "Piring Makanan" ---
+        // Sarapan: 1 Karbo + 1 Buah/Susu
+        const breakfastCarb = getRandomFood(carbs);
+        const breakfastSide = getRandomFood(fruits.length > 0 ? fruits : dairySnacks);
+        
+        // Makan Siang: 1 Protein + 1 Karbo + 1 Sayur
+        const lunchProtein = getRandomFood(proteins);
+        const lunchCarb = getRandomFood(carbs);
+        const lunchVeggie = getRandomFood(veggies);
 
-        // Jangan gunakan makanan yang sama untuk makan siang dan malam
-        if (lunch._id === dinner._id) continue; 
+        // Makan Malam: 1 Protein + 1 Karbo + 1 Sayur
+        const dinnerProtein = getRandomFood(proteins);
+        const dinnerCarb = getRandomFood(carbs);
+        const dinnerVeggie = getRandomFood(veggies);
 
+        // Gabungkan rencana (ini adalah 8 item makanan, bukan 3)
+        const currentPlanItems = [
+            breakfastCarb, breakfastSide,
+            lunchProtein, lunchCarb, lunchVeggie,
+            dinnerProtein, dinnerCarb, dinnerVeggie
+        ];
+
+        // Hitung total makro dari SEMUA item
         const currentMacros = {
-            calories: breakfast.calories + lunch.calories + dinner.calories,
-            proteins: breakfast.proteins + lunch.proteins + dinner.proteins,
-            carbs: breakfast.carbs + lunch.carbs + dinner.carbs,
-            fats: breakfast.fats + lunch.fats + dinner.fats,
+            calories: 0, proteins: 0, carbs: 0, fats: 0,
         };
+        currentPlanItems.forEach(item => {
+            if (item) { // Pastikan item tidak null
+                currentMacros.calories += item.calories;
+                currentMacros.proteins += item.proteins;
+                currentMacros.carbs += item.carbs;
+                currentMacros.fats += item.fats;
+            }
+        });
 
+        // Hitung skornya
         const currentScore = calculatePlanScore(currentMacros, dailyTargets);
 
         if (currentScore < bestScore) {
             bestScore = currentScore;
-            bestPlan = { breakfast, lunch, dinner };
+            // Simpan rencana dalam format yang diharapkan oleh 'exports.generateMealPlan'
+            // Kita akan gabungkan komponennya. Contoh: "Nasi dan Ayam Bakar"
+            // NOTE: Ini hanya untuk contoh, kita tetap simpan ID-nya di langkah 7
+            // Untuk sekarang, kita hanya perlu 3 makanan "utama" untuk disimpan.
+            // Kita akan pilih komponen utama dari setiap piring.
+            bestPlan = { 
+                breakfast: breakfastCarb, // Makanan utama sarapan
+                lunch: lunchProtein,      // Makanan utama makan siang
+                dinner: dinnerProtein     // Makanan utama makan malam
+            };
+            
+            // --- PERBAIKAN SEBENARNYA ADA DI SINI ---
+            // Kita harus menyimpan SEMUA item, bukan hanya 3.
+            // Ini membutuhkan perubahan pada `exports.generateMealPlan`
+            // Mari kita sederhanakan: kita simpan 3 "piring"
+            
+            bestPlan = {
+                // "piring" sarapan:
+                breakfast: {
+                    _id: breakfastCarb._id, // Simpan ID item utama
+                    name: `${breakfastCarb.name} & ${breakfastSide.name}`,
+                    calories: breakfastCarb.calories + breakfastSide.calories,
+                    proteins: breakfastCarb.proteins + breakfastSide.proteins,
+                    carbs: breakfastCarb.carbs + breakfastSide.carbs,
+                    fats: breakfastCarb.fats + breakfastSide.fats,
+                    category: 'Sarapan' // Kategori baru: Piring
+                },
+                // "piring" makan siang:
+                lunch: {
+                    _id: lunchProtein._id, // Simpan ID item utama
+                    name: `${lunchProtein.name}, ${lunchCarb.name} & ${lunchVeggie.name}`,
+                    calories: lunchProtein.calories + lunchCarb.calories + lunchVeggie.calories,
+                    proteins: lunchProtein.proteins + lunchCarb.proteins + lunchVeggie.proteins,
+                    carbs: lunchProtein.carbs + lunchCarb.carbs + lunchVeggie.carbs,
+                    fats: lunchProtein.fats + lunchCarb.fats + lunchVeggie.fats,
+                    category: 'Makan Siang'
+                },
+                // "piring" makan malam:
+                dinner: {
+                    _id: dinnerProtein._id,
+                    name: `${dinnerProtein.name}, ${dinnerCarb.name} & ${dinnerVeggie.name}`,
+                    calories: dinnerProtein.calories + dinnerCarb.calories + dinnerVeggie.calories,
+                    proteins: dinnerProtein.proteins + dinnerCarb.proteins + dinnerVeggie.proteins,
+                    carbs: dinnerProtein.carbs + dinnerCarb.carbs + dinnerVeggie.carbs,
+                    fats: dinnerProtein.fats + dinnerCarb.fats + dinnerVeggie.fats,
+                    category: 'Makan Malam'
+                }
+            };
+            // ------------------------------------
         }
     }
 
-    // Jika setelah 100x tetap tidak menemukan, setidaknya kembalikan sesuatu
+    // Jika setelah 200x tetap tidak menemukan (seharusnya tidak terjadi jika ada fallback)
     if (!bestPlan.breakfast) {
         bestPlan = {
             breakfast: getRandomFood(availableFoods),
