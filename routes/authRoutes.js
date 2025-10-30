@@ -5,5 +5,6 @@ const { register, login, verifyOtp, googleLogin } = require('../controllers/auth
 router.post('/register', register);
 router.post('/verify-otp', verifyOtp);
 router.post('/login', login);
+router.post('/google', googleLogin); // Rute baru untuk Google Login
 
 module.exports = router;
