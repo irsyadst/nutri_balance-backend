@@ -86,7 +86,7 @@ function calculatePlanScore(currentMacros, targetMacros) {
  * [PERBAIKAN]: Sekarang menghitung dan mengembalikan 'quantity'.
  */
 function generateSmartDailyPlan(dailyTargets, availableFoods) {
-    let bestPlan = { breakfast: [], lunch: [], dinner: [] }; // Diubah menjadi array
+    let bestPlan = { breakfast: [], lunch: [], dinner: [] };
     let bestScore = Infinity;
 
     // --- (Logika pemisahan kategori Anda sudah benar) ---
@@ -115,32 +115,43 @@ function generateSmartDailyPlan(dailyTargets, availableFoods) {
     // Coba 200 kombinasi acak untuk menemukan yang terbaik
     for (let i = 0; i < 200; i++) {
 
-        // --- 1. Pilih 8 item makanan (seperti sebelumnya) ---
-        const breakfastItems = [getRandomFood(carbs), getRandomFood(fruits.length > 0 ? fruits : dairySnacks)];
-        const lunchItems = [getRandomFood(proteins), getRandomFood(carbs), getRandomFood(veggies)];
-        const dinnerItems = [getRandomFood(proteins), getRandomFood(carbs), getRandomFood(veggies)];
+        // --- 1. Pilih 8 item makanan (Dipisah Main & Side) ---
+        const breakfastMain = getRandomFood(carbs);
+        const breakfastSide = getRandomFood(fruits.length > 0 ? fruits : dairySnacks);
+        
+        const lunchMainProtein = getRandomFood(proteins);
+        const lunchMainCarb = getRandomFood(carbs);
+        const lunchSide = getRandomFood(veggies);
+        
+        const dinnerMainProtein = getRandomFood(proteins);
+        const dinnerMainCarb = getRandomFood(carbs);
+        const dinnerSide = getRandomFood(veggies);
 
-        // --- 2. Hitung total kalori TANPA skala ---
-        const unscaledMacros = { calories: 0, proteins: 0, carbs: 0, fats: 0 };
-        [...breakfastItems, ...lunchItems, ...dinnerItems].forEach(item => {
-            if (item) {
-                unscaledMacros.calories += item.calories;
-                unscaledMacros.proteins += item.proteins;
-                unscaledMacros.carbs += item.carbs;
-                unscaledMacros.fats += item.fats;
-            }
-        });
+        // Kumpulkan item utama dan sampingan
+        const mainItems = [breakfastMain, lunchMainProtein, lunchMainCarb, dinnerMainProtein, dinnerMainCarb];
+        const sideItems = [breakfastSide, lunchSide, dinnerSide];
 
-        if (unscaledMacros.calories === 0) continue; // Hindari pembagian dengan nol
+        // --- 2. Hitung kalori sampingan (diasumsikan qty = 1.0) ---
+        let sideCalories = 0;
+        sideItems.forEach(item => { if (item) sideCalories += item.calories; });
 
-        // --- 3. Hitung 'quantity' berdasarkan faktor skala kalori ---
-        let scalingFactor = dailyTargets.targetCalories / unscaledMacros.calories;
-        // Bulatkan ke 0.5 terdekat (misal: 1.58 -> 1.5, 1.8 -> 2.0)
-        let scaledQty = Math.round(scalingFactor * 2) / 2;
-        // Batasi quantity: minimal 1x, maksimal 3x (agar tidak absurd)
-        scaledQty = Math.max(1, Math.min(scaledQty, 3));
+        // --- 3. Hitung kalori item utama (saat qty = 1.0) ---
+        let unscaledMainCalories = 0;
+        mainItems.forEach(item => { if (item) unscaledMainCalories += item.calories; });
 
-        // --- 4. Hitung ulang makro DENGAN 'quantity' yang baru ---
+        if (unscaledMainCalories === 0) continue; // Hindari pembagian dengan nol
+
+        // --- 4. Tentukan sisa kalori yang harus dipenuhi oleh item utama ---
+        const mainTargetCalories = dailyTargets.targetCalories - sideCalories;
+
+        // --- 5. Hitung 'quantity' (faktor skala) HANYA untuk item utama ---
+        let scaledQty = mainTargetCalories / unscaledMainCalories;
+
+        // [SOLUSI] Batasi quantity dengan lebih longgar (0.5x s/d 4x)
+        // Jangan bulatkan dulu agar perhitungan skor lebih presisi
+        scaledQty = Math.max(0.5, Math.min(scaledQty, 4.0)); 
+
+        // --- 6. Hitung ulang total makro DENGAN 'quantity' yang baru ---
         const scaledMacros = { calories: 0, proteins: 0, carbs: 0, fats: 0 };
         const applyMacros = (item, qty) => {
             if (item) {
@@ -151,38 +162,36 @@ function generateSmartDailyPlan(dailyTargets, availableFoods) {
             }
         };
 
-        // Terapkan 'scaledQty' HANYA pada Karbohidrat dan Protein
-        applyMacros(breakfastItems[0], scaledQty); // [0] adalah Karbo
-        applyMacros(breakfastItems[1], 1.0);      // [1] adalah Sampingan (buah/susu)
+        // Terapkan 'scaledQty' ke SEMUA item utama
+        mainItems.forEach(item => applyMacros(item, scaledQty));
+        
+        // Terapkan '1.0' ke SEMUA item sampingan
+        sideItems.forEach(item => applyMacros(item, 1.0));
 
-        applyMacros(lunchItems[0], scaledQty);     // [0] adalah Protein
-        applyMacros(lunchItems[1], scaledQty);     // [1] adalah Karbo
-        applyMacros(lunchItems[2], 1.0);          // [2] adalah Sayur
-
-        applyMacros(dinnerItems[0], scaledQty);    // [0] adalah Protein
-        applyMacros(dinnerItems[1], scaledQty);    // [1] adalah Karbo
-        applyMacros(dinnerItems[2], 1.0);         // [2] adalah Sayur
-
-        // --- 5. Hitung skor berdasarkan makro yang SUDAH DISESUAIKAN ---
+        // --- 7. Hitung skor berdasarkan makro yang SUDAH DISESUAIKAN ---
         const currentScore = calculatePlanScore(scaledMacros, dailyTargets);
 
         if (currentScore < bestScore) {
             bestScore = currentScore;
-            // --- 6. Simpan rencana terbaik (lengkap dengan 'food' dan 'qty'-nya) ---
+            
+            // [SOLUSSI] Bulatkan quantity HANYA saat menyimpan rencana terbaik
+            const finalQty = Math.round(scaledQty * 2) / 2; // Bulatkan ke 0.5 terdekat
+
+            // --- 8. Simpan rencana terbaik (lengkap dengan 'food' dan 'qty'-nya) ---
             bestPlan = {
                 breakfast: [
-                    { food: breakfastItems[0], qty: scaledQty },
-                    { food: breakfastItems[1], qty: 1.0 }
+                    { food: breakfastMain, qty: finalQty },
+                    { food: breakfastSide, qty: 1.0 }
                 ],
                 lunch: [
-                    { food: lunchItems[0], qty: scaledQty },
-                    { food: lunchItems[1], qty: scaledQty },
-                    { food: lunchItems[2], qty: 1.0 }
+                    { food: lunchMainProtein, qty: finalQty },
+                    { food: lunchMainCarb, qty: finalQty },
+                    { food: lunchSide, qty: 1.0 }
                 ],
                 dinner: [
-                    { food: dinnerItems[0], qty: scaledQty },
-                    { food: dinnerItems[1], qty: scaledQty },
-                    { food: dinnerItems[2], qty: 1.0 }
+                    { food: dinnerMainProtein, qty: finalQty },
+                    { food: dinnerMainCarb, qty: finalQty },
+                    { food: dinnerSide, qty: 1.0 }
                 ]
             };
         }
