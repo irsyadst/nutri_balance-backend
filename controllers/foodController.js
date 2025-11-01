@@ -100,25 +100,27 @@ exports.getMealPlan = async (req, res) => {
     }
 };
 
+// GANTI FUNGSI LAMA ANDA DENGAN YANG INI
 function calculatePlanScore(currentMacros, targetMacros) {
-    // Menghitung % perbedaan untuk setiap makro. 1.0 = 100% error.
-    const calError = Math.abs((currentMacros.calories - targetMacros.targetCalories) / (targetMacros.targetCalories || 1));
+    const calorieDiff = currentMacros.calories - targetMacros.targetCalories;
+    let calError;
+
+    if (calorieDiff > 0) {
+
+        calError = (calorieDiff / (targetMacros.targetCalories || 1)) * 10; 
+    } else {
+        calError = Math.abs(calorieDiff / (targetMacros.targetCalories || 1));
+    }
+
+
     const protError = Math.abs((currentMacros.proteins - targetMacros.targetProteins) / (targetMacros.targetProteins || 1));
     const carbError = Math.abs((currentMacros.carbs - targetMacros.targetCarbs) / (targetMacros.targetCarbs || 1));
     const fatError = Math.abs((currentMacros.fats - targetMacros.targetFats) / (targetMacros.targetFats || 1));
 
-    // Menjumlahkan error. Kalori diberi bobot 2x lebih penting.
     return (calError * 2) + protError + carbError + fatError;
 }
 
-// --- [PERBAIKAN 2: Generator Aman] ---
-// Mengganti fungsi generator lama dengan versi yang lebih aman,
-// yang dapat menangani jika ada kategori makanan yang kosong (karena alergi dll).
-/**
- * Fungsi algoritma cerdas (Randomized Best-of-N).
- * [VERSI AMAN]: Menggunakan 'emergencyFood' untuk mencegah crash
- * jika ada kategori makanan yang kosong.
- */
+
 function generateSmartDailyPlan(dailyTargets, availableFoods) {
     let bestPlan = { breakfast: [], lunch: [], dinner: [] };
     let bestScore = Infinity;
