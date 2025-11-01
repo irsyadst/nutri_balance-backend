@@ -26,12 +26,40 @@ exports.searchFoods = async (req, res) => {
     }
 };
 
+// --- [PERBAIKAN 1: Bug logFood] ---
+// Memperbaiki bug di mana 'foodDatabase' digunakan alih-alih mengambil
+// data dari model 'Food' dan menyesuaikan format data untuk 'FoodLog'.
 exports.logFood = async (req, res) => {
     try {
-        const { foodId, quantity, mealType } = req.body;
-        const food = foodDatabase.find(f => f.id === foodId);
+        // Ambil 'date' juga dari body, agar pengguna bisa log untuk hari kemarin
+        const { foodId, quantity, mealType, date } = req.body;
+
+        // PERBAIKAN: Cari makanan di database MongoDB
+        const food = await Food.findById(foodId);
         if (!food) return res.status(404).json({ message: 'Makanan tidak ditemukan' });
-        const logEntry = new FoodLog({ userId: req.user.userId, date: new Date().toISOString().split('T')[0], food, quantity, mealType });
+
+        // Gunakan tanggal dari client, atau default ke hari ini
+        const logDate = date || new Date().toISOString().split('T')[0];
+
+        // PERBAIKAN: Buat objek food yang sesuai dengan foodLogModel
+        const foodDataForLog = {
+            id: food._id.toString(),
+            name: food.name,
+            calories: food.calories,
+            proteins: food.proteins,
+            carbs: food.carbs,
+            fats: food.fats,
+            category: food.category
+        };
+
+        const logEntry = new FoodLog({ 
+            userId: req.user.userId, 
+            date: logDate, 
+            food: foodDataForLog, // Gunakan objek yang sudah disiapkan
+            quantity, 
+            mealType 
+        });
+        
         await logEntry.save();
         res.status(201).json({ message: 'Makanan berhasil dicatat', log: logEntry });
     } catch (error) {
@@ -39,6 +67,7 @@ exports.logFood = async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 };
+// --- [AKHIR PERBAIKAN 1] ---
 
 exports.getHistory = async (req, res) => {
     try {
@@ -81,36 +110,44 @@ function calculatePlanScore(currentMacros, targetMacros) {
     // Menjumlahkan error. Kalori diberi bobot 2x lebih penting.
     return (calError * 2) + protError + carbError + fatError;
 }
+
+// --- [PERBAIKAN 2: Generator Aman] ---
+// Mengganti fungsi generator lama dengan versi yang lebih aman,
+// yang dapat menangani jika ada kategori makanan yang kosong (karena alergi dll).
 /**
  * Fungsi algoritma cerdas (Randomized Best-of-N).
- * [PERBAIKAN]: Sekarang menghitung dan mengembalikan 'quantity'.
+ * [VERSI AMAN]: Menggunakan 'emergencyFood' untuk mencegah crash
+ * jika ada kategori makanan yang kosong.
  */
 function generateSmartDailyPlan(dailyTargets, availableFoods) {
     let bestPlan = { breakfast: [], lunch: [], dinner: [] };
     let bestScore = Infinity;
 
-    // --- (Logika pemisahan kategori Anda sudah benar) ---
+    // --- Pemisahan kategori ---
     const proteins = availableFoods.filter(f => ['Protein Hewani', 'Protein Nabati'].includes(f.category));
     const carbs = availableFoods.filter(f => ['Karbohidrat'].includes(f.category));
     const veggies = availableFoods.filter(f => ['Sayuran'].includes(f.category));
     const fruits = availableFoods.filter(f => ['Buah'].includes(f.category));
     const dairySnacks = availableFoods.filter(f => ['Susu & Olahan', 'Snack'].includes(f.category));
 
-    // --- (Fallback Anda sudah benar) ---
+    // --- Fallback (Ini sudah OK) ---
     if (proteins.length === 0) proteins.push(...availableFoods.filter(f => f.proteins > 5));
     if (carbs.length === 0) carbs.push(...availableFoods.filter(f => f.carbs > 10));
     if (veggies.length === 0) veggies.push(...availableFoods.filter(f => f.category === 'Buah' || f.calories < 100));
     if (fruits.length === 0) fruits.push(...availableFoods.filter(f => f.category === 'Buah' || f.calories < 150));
     if (dairySnacks.length === 0) dairySnacks.push(...availableFoods.filter(f => f.category === 'Snack' || f.calories < 200));
 
-    if (proteins.length === 0 || carbs.length === 0 || veggies.length === 0) {
-        console.error("[Generate] Data primer (protein/karbo/sayur) tidak cukup. Fallback.");
-        const fallbackFood = availableFoods[Math.floor(Math.random() * availableFoods.length)];
-        return { breakfast: [{ food: fallbackFood, qty: 1 }], lunch: [{ food: fallbackFood, qty: 1 }], dinner: [{ food: fallbackFood, qty: 1 }] };
-    }
-    // --------------------------------------------------------
+    // Makanan 'darurat'. Karena kita sudah cek (length > 0) di 'generateMealPlan', ini dijamin aman.
+    const emergencyFood = availableFoods[0]; 
 
-    const getRandomFood = (foodList) => foodList[Math.floor(Math.random() * foodList.length)];
+    // --- Fungsi getRandomFood yang aman ---
+    const getRandomFood = (foodList) => {
+        if (foodList && foodList.length > 0) {
+            return foodList[Math.floor(Math.random() * foodList.length)];
+        }
+        // Jika foodList kosong, kembalikan makanan darurat
+        return emergencyFood; 
+    };
 
     // Coba 200 kombinasi acak untuk menemukan yang terbaik
     for (let i = 0; i < 200; i++) {
@@ -147,8 +184,7 @@ function generateSmartDailyPlan(dailyTargets, availableFoods) {
         // --- 5. Hitung 'quantity' (faktor skala) HANYA untuk item utama ---
         let scaledQty = mainTargetCalories / unscaledMainCalories;
 
-        // [SOLUSI] Batasi quantity dengan lebih longgar (0.5x s/d 4x)
-        // Jangan bulatkan dulu agar perhitungan skor lebih presisi
+        // Batasi quantity (0.5x s/d 4x)
         scaledQty = Math.max(0.5, Math.min(scaledQty, 4.0)); 
 
         // --- 6. Hitung ulang total makro DENGAN 'quantity' yang baru ---
@@ -174,7 +210,7 @@ function generateSmartDailyPlan(dailyTargets, availableFoods) {
         if (currentScore < bestScore) {
             bestScore = currentScore;
             
-            // [SOLUSSI] Bulatkan quantity HANYA saat menyimpan rencana terbaik
+            // Bulatkan quantity HANYA saat menyimpan rencana terbaik
             const finalQty = Math.round(scaledQty * 2) / 2; // Bulatkan ke 0.5 terdekat
 
             // --- 8. Simpan rencana terbaik (lengkap dengan 'food' dan 'qty'-nya) ---
@@ -199,6 +235,9 @@ function generateSmartDailyPlan(dailyTargets, availableFoods) {
 
     return bestPlan;
 }
+// --- [AKHIR PERBAIKAN 2] ---
+
+
 exports.generateMealPlan = async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -234,16 +273,21 @@ exports.generateMealPlan = async (req, res) => {
 
         // 4. Ambil Makanan yang Sesuai Filter
         const availableFoods = await Food.find(queryFilter);
-        if (availableFoods.length < 5) { // Kita butuh lebih banyak variasi sekarang
+        
+        // --- [PERBAIKAN 3: Filter Tanggal] ---
+        // Mengubah < 5 menjadi === 0. Selama ada 1 makanan, generator
+        // harus tetap berjalan, ini memperbaiki error "Tidak cukup makanan".
+        if (availableFoods.length === 0) { 
             return res.status(400).json({
-                message: "Tidak cukup makanan di database yang cocok dengan pantangan dan alergi Anda."
+                message: "Tidak ada satupun makanan di database yang cocok dengan pantangan dan alergi Anda."
             });
         }
+        // --- [AKHIR PERBAIKAN 3] ---
 
-        // 5. Tentukan Tanggal
+        // 5. Tentukan Tanggal (LOGIKA INI SUDAH BENAR)
         const datesToGenerate = [];
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0); // Set ke awal hari
 
         if (period === 'today') {
             datesToGenerate.push(today.toISOString().split('T')[0]);
@@ -261,20 +305,25 @@ exports.generateMealPlan = async (req, res) => {
             }
         } else if (period === 'custom' && startDate && endDate) {
             let currentDate = new Date(startDate);
-            currentDate.setHours(0, 0, 0, 0);
+            currentDate.setHours(0, 0, 0, 0); // Normalisasi
             const lastDate = new Date(endDate);
-            lastDate.setHours(0, 0, 0, 0);
+            lastDate.setHours(0, 0, 0, 0); // Normalisasi
 
             if (currentDate > lastDate) {
                 return res.status(400).json({ message: "Tanggal akhir tidak boleh sebelum tanggal mulai." });
             }
-
-            while (currentDate <= lastDate) {
+            
+            // Batasi agar tidak overload, misal maks 31 hari
+            let count = 0;
+            while (currentDate <= lastDate && count < 31) {
                 datesToGenerate.push(currentDate.toISOString().split('T')[0]);
                 currentDate.setDate(currentDate.getDate() + 1);
+                count++;
             }
-            if (datesToGenerate.length > 30) {
-                return res.status(400).json({ message: "Rentang tanggal kustom tidak boleh lebih dari 30 hari." });
+            // Perbaikan kecil: Cek jika count MELEBIHI 30 (atau >= 31)
+            if (count >= 31) { 
+                 console.warn("Generate Meal Plan: Rentang kustom melebihi 30 hari, dibatasi.");
+                 // Tidak perlu return error, cukup batasi saja (datesToGenerate sudah terisi 30 hari)
             }
         }
 
@@ -291,10 +340,9 @@ exports.generateMealPlan = async (req, res) => {
         // 7. Buat Rencana Baru untuk Setiap Tanggal
         let newPlans = [];
         for (const date of datesToGenerate) {
-            // Panggil algoritma cerdas
+            // Panggil algoritma cerdas (yang sudah aman)
             const plan = generateSmartDailyPlan(dailyTargets, availableFoods);
 
-            // --- PERBAIKAN LOGIKA PENYIMPANAN (MENAMBAHKAN QUANTITY) ---
             // Loop untuk Sarapan
             plan.breakfast.forEach(item => {
                 if (item.food) newPlans.push({ userId, date, mealType: 'Sarapan', food: item.food._id, quantity: item.qty, time: '08:00' });
@@ -307,8 +355,8 @@ exports.generateMealPlan = async (req, res) => {
             plan.dinner.forEach(item => {
                 if (item.food) newPlans.push({ userId, date, mealType: 'Makan Malam', food: item.food._id, quantity: item.qty, time: '19:00' });
             });
-            // --------------------------------------
         }
+        
         // 8. Simpan Rencana Makan Baru ke Database
         await MealPlan.insertMany(newPlans);
 
@@ -321,4 +369,3 @@ exports.generateMealPlan = async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan pada server saat membuat rencana makan' });
     }
 };
-
