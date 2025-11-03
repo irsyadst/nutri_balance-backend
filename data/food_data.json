@@ -1,6 +1,8 @@
 [
   {
-    "name": "Nasi Putih (1 porsi, 100g)",
+    "name": "Nasi Putih",
+    "servingQuantity": 100,
+    "servingUnit": "g",
     "calories": 130,
     "proteins": 2.7,
     "carbs": 28.2,
@@ -10,7 +12,9 @@
     "allergens": []
   },
   {
-    "name": "Dada Ayam Bakar (100g)",
+    "name": "Dada Ayam Bakar",
+    "servingQuantity": 100,
+    "servingUnit": "g",
     "calories": 165,
     "proteins": 31,
     "carbs": 0,
@@ -20,7 +24,9 @@
     "allergens": []
   },
   {
-    "name": "Telur Rebus (1 butir)",
+    "name": "Telur Rebus",
+    "servingQuantity": 1,
+    "servingUnit": "butir",
     "calories": 78,
     "proteins": 6,
     "carbs": 0.6,
@@ -30,7 +36,9 @@
     "allergens": []
   },
   {
-    "name": "Tahu Kukus (100g)",
+    "name": "Tahu Kukus",
+    "servingQuantity": 100,
+    "servingUnit": "g",
     "calories": 76,
     "proteins": 8,
     "carbs": 2.8,
@@ -40,7 +48,9 @@
     "allergens": ["Kedelai"]
   },
   {
-    "name": "Tempe Goreng (100g)",
+    "name": "Tempe Goreng",
+    "servingQuantity": 100,
+    "servingUnit": "g",
     "calories": 192,
     "proteins": 19,
     "carbs": 9,
@@ -50,7 +60,9 @@
     "allergens": ["Kedelai"]
   },
   {
-    "name": "Brokoli Rebus (1 cangkir)",
+    "name": "Brokoli Rebus",
+    "servingQuantity": 1,
+    "servingUnit": "cangkir",
     "calories": 55,
     "proteins": 3.7,
     "carbs": 11.2,
@@ -60,7 +72,9 @@
     "allergens": []
   },
   {
-    "name": "Bayam Tumis (1 cangkir)",
+    "name": "Bayam Tumis",
+    "servingQuantity": 1,
+    "servingUnit": "cangkir",
     "calories": 41,
     "proteins": 5.3,
     "carbs": 6.4,
@@ -70,7 +84,9 @@
     "allergens": []
   },
   {
-    "name": "Apel (1 buah sedang)",
+    "name": "Apel",
+    "servingQuantity": 1,
+    "servingUnit": "buah sedang",
     "calories": 95,
     "proteins": 0.5,
     "carbs": 25,
@@ -80,7 +96,9 @@
     "allergens": []
   },
   {
-    "name": "Pisang (1 buah sedang)",
+    "name": "Pisang",
+    "servingQuantity": 1,
+    "servingUnit": "buah sedang",
     "calories": 105,
     "proteins": 1.3,
     "carbs": 27,
@@ -90,7 +108,9 @@
     "allergens": []
   },
   {
-    "name": "Alpukat (100g)",
+    "name": "Alpukat",
+    "servingQuantity": 100,
+    "servingUnit": "g",
     "calories": 160,
     "proteins": 2,
     "carbs": 9,
@@ -100,7 +120,9 @@
     "allergens": []
   },
   {
-    "name": "Salmon Panggang (100g)",
+    "name": "Salmon Panggang",
+    "servingQuantity": 100,
+    "servingUnit": "g",
     "calories": 208,
     "proteins": 20,
     "carbs": 0,
@@ -110,7 +132,9 @@
     "allergens": ["Kerang"]
   },
   {
-    "name": "Kacang Almond (30g)",
+    "name": "Kacang Almond",
+    "servingQuantity": 30,
+    "servingUnit": "g",
     "calories": 164,
     "proteins": 6,
     "carbs": 6,
@@ -120,7 +144,9 @@
     "allergens": ["Kacang"]
   },
   {
-    "name": "Yogurt Yunani Plain (100g)",
+    "name": "Yogurt Yunani Plain",
+    "servingQuantity": 100,
+    "servingUnit": "g",
     "calories": 59,
     "proteins": 10,
     "carbs": 3.6,
@@ -130,7 +156,9 @@
     "allergens": ["Susu"]
   },
   {
-    "name": "Roti Gandum Utuh (1 lembar)",
+    "name": "Roti Gandum Utuh",
+    "servingQuantity": 1,
+    "servingUnit": "lembar",
     "calories": 81,
     "proteins": 3.4,
     "carbs": 13.8,
@@ -140,7 +168,9 @@
     "allergens": ["Gluten"]
   },
   {
-    "name": "Susu Sapi (1 cangkir)",
+    "name": "Susu Sapi",
+    "servingQuantity": 1,
+    "servingUnit": "cangkir",
     "calories": 103,
     "proteins": 8,
     "carbs": 12,
@@ -150,7 +180,9 @@
     "allergens": ["Susu"]
   },
   {
-    "name": "Susu Kedelai (1 cangkir)",
+    "name": "Susu Kedelai",
+    "servingQuantity": 1,
+    "servingUnit": "cangkir",
     "calories": 80,
     "proteins": 7,
     "carbs": 4,
@@ -160,7 +192,9 @@
     "allergens": ["Kedelai"]
   },
   {
-    "name": "Ikan Kembung Bakar (1 ekor, 100g)",
+    "name": "Ikan Kembung Bakar",
+    "servingQuantity": 100,
+    "servingUnit": "g",
     "calories": 125,
     "proteins": 21.3,
     "carbs": 0,
@@ -170,7 +204,9 @@
     "allergens": ["Kerang"]
   },
   {
-    "name": "Udang Rebus (100g)",
+    "name": "Udang Rebus",
+    "servingQuantity": 100,
+    "servingUnit": "g",
     "calories": 99,
     "proteins": 24,
     "carbs": 0.2,
@@ -180,7 +216,9 @@
     "allergens": ["Kerang"]
   },
   {
-    "name": "Daging Sapi Giling Tumis (100g)",
+    "name": "Daging Sapi Giling Tumis",
+    "servingQuantity": 100,
+    "servingUnit": "g",
     "calories": 250,
     "proteins": 26,
     "carbs": 0,
@@ -190,7 +228,9 @@
     "allergens": []
   },
   {
-    "name": "Kacang Merah Rebus (1 cangkir, 170g)",
+    "name": "Kacang Merah Rebus",
+    "servingQuantity": 170,
+    "servingUnit": "g",
     "calories": 225,
     "proteins": 15,
     "carbs": 40,
@@ -200,7 +240,9 @@
     "allergens": []
   },
   {
-    "name": "Edamame Rebus (1 cangkir, 155g)",
+    "name": "Edamame Rebus",
+    "servingQuantity": 155,
+    "servingUnit": "g",
     "calories": 188,
     "proteins": 18,
     "carbs": 14,
@@ -210,7 +252,9 @@
     "allergens": ["Kedelai"]
   },
   {
-    "name": "Nasi Merah (1 porsi, 100g)",
+    "name": "Nasi Merah",
+    "servingQuantity": 100,
+    "servingUnit": "g",
     "calories": 111,
     "proteins": 2.6,
     "carbs": 23,
@@ -220,7 +264,9 @@
     "allergens": []
   },
   {
-    "name": "Kentang Rebus (1 buah sedang, 150g)",
+    "name": "Kentang Rebus",
+    "servingQuantity": 150,
+    "servingUnit": "g",
     "calories": 130,
     "proteins": 3,
     "carbs": 30,
@@ -230,7 +276,9 @@
     "allergens": []
   },
   {
-    "name": "Ubi Jalar Panggang (100g)",
+    "name": "Ubi Jalar Panggang",
+    "servingQuantity": 100,
+    "servingUnit": "g",
     "calories": 90,
     "proteins": 2,
     "carbs": 21,
@@ -240,7 +288,9 @@
     "allergens": []
   },
   {
-    "name": "Oatmeal (1/2 cangkir kering, 40g)",
+    "name": "Oatmeal",
+    "servingQuantity": 40,
+    "servingUnit": "g",
     "calories": 150,
     "proteins": 5,
     "carbs": 27,
@@ -250,7 +300,9 @@
     "allergens": ["Gluten"]
   },
   {
-    "name": "Roti Tawar Putih (1 lembar)",
+    "name": "Roti Tawar Putih",
+    "servingQuantity": 1,
+    "servingUnit": "lembar",
     "calories": 69,
     "proteins": 2.7,
     "carbs": 12.5,
@@ -260,7 +312,9 @@
     "allergens": ["Gluten", "Susu", "Kedelai"]
   },
   {
-    "name": "Kangkung Tumis (1 cangkir)",
+    "name": "Kangkung Tumis",
+    "servingQuantity": 1,
+    "servingUnit": "cangkir",
     "calories": 98,
     "proteins": 3.2,
     "carbs": 7,
@@ -270,7 +324,9 @@
     "allergens": []
   },
   {
-    "name": "Wortel Rebus (1 cangkir)",
+    "name": "Wortel Rebus",
+    "servingQuantity": 1,
+    "servingUnit": "cangkir",
     "calories": 52,
     "proteins": 1.2,
     "carbs": 12,
@@ -280,7 +336,9 @@
     "allergens": []
   },
   {
-    "name": "Tomat (1 buah sedang)",
+    "name": "Tomat",
+    "servingQuantity": 1,
+    "servingUnit": "buah sedang",
     "calories": 22,
     "proteins": 1.1,
     "carbs": 4.8,
@@ -290,7 +348,9 @@
     "allergens": []
   },
   {
-    "name": "Timun (1/2 cangkir irisan)",
+    "name": "Timun",
+    "servingQuantity": 0.5,
+    "servingUnit": "cangkir irisan",
     "calories": 8,
     "proteins": 0.3,
     "carbs": 1.9,
@@ -300,7 +360,9 @@
     "allergens": []
   },
   {
-    "name": "Mangga (1 cangkir potongan)",
+    "name": "Mangga",
+    "servingQuantity": 1,
+    "servingUnit": "cangkir potongan",
     "calories": 99,
     "proteins": 1.4,
     "carbs": 25,
@@ -310,7 +372,9 @@
     "allergens": []
   },
   {
-    "name": "Jeruk (1 buah sedang)",
+    "name": "Jeruk",
+    "servingQuantity": 1,
+    "servingUnit": "buah sedang",
     "calories": 62,
     "proteins": 1.2,
     "carbs": 15.4,
@@ -320,7 +384,9 @@
     "allergens": []
   },
   {
-    "name": "Semangka (1 cangkir potongan)",
+    "name": "Semangka",
+    "servingQuantity": 1,
+    "servingUnit": "cangkir potongan",
     "calories": 46,
     "proteins": 0.9,
     "carbs": 11.5,
@@ -330,7 +396,9 @@
     "allergens": []
   },
   {
-    "name": "Pepaya (1 cangkir potongan)",
+    "name": "Pepaya",
+    "servingQuantity": 1,
+    "servingUnit": "cangkir potongan",
     "calories": 62,
     "proteins": 0.7,
     "carbs": 15.7,
@@ -340,7 +408,9 @@
     "allergens": []
   },
   {
-    "name": "Keju Cheddar (1 lembar, 28g)",
+    "name": "Keju Cheddar",
+    "servingQuantity": 28,
+    "servingUnit": "g",
     "calories": 113,
     "proteins": 7,
     "carbs": 1.4,
@@ -350,7 +420,9 @@
     "allergens": ["Susu"]
   },
   {
-    "name": "Kacang Tanah Goreng (30g)",
+    "name": "Kacang Tanah Goreng",
+    "servingQuantity": 30,
+    "servingUnit": "g",
     "calories": 170,
     "proteins": 7,
     "carbs": 6,
@@ -360,7 +432,9 @@
     "allergens": ["Kacang"]
   },
   {
-    "name": "Cokelat Hitam 70% (30g)",
+    "name": "Cokelat Hitam 70%",
+    "servingQuantity": 30,
+    "servingUnit": "g",
     "calories": 170,
     "proteins": 2.2,
     "carbs": 13,
@@ -370,7 +444,9 @@
     "allergens": ["Susu", "Kedelai"]
   },
   {
-    "name": "Kopi Hitam (1 cangkir)",
+    "name": "Kopi Hitam",
+    "servingQuantity": 1,
+    "servingUnit": "cangkir",
     "calories": 2,
     "proteins": 0.3,
     "carbs": 0,

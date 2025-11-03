@@ -8,6 +8,11 @@ const FoodSchema = new mongoose.Schema({
     carbs: { type: Number, default: 0 },
     fats: { type: Number, default: 0 },
 
+
+    // Jumlah takaran standar (misal: 100)
+    servingQuantity: { type: Number, default: 1 },
+    // Satuan takaran standar (misal: 'g' atau 'cangkir')
+    servingUnit: { type: String, default: 'porsi' },
     // Kategori yang Anda minta (e.g., 'Daging', 'Sayuran', 'Buah', 'Snack')
     category: { type: String, index: true },
 

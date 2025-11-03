@@ -3,6 +3,29 @@ const MealPlan = require('../models/mealPlanModel');
 const Food = require('../models/foodModel');
 const User = require('../models/userModel');
 
+const processFoodEntry = (entry) => {
+    // 1. Ambil data makanan.
+    // 'entry.food' bisa berasal dari populate (MealPlan) atau objek yang disimpan (FoodLog)
+    const foodData = entry.food;
+    
+    // 2. Beri nilai default jika data tidak lengkap (untuk keamanan)
+    const multiplier = entry.quantity || 1;
+    const baseQuantity = foodData?.servingQuantity || 1;
+    const baseUnit = foodData?.servingUnit || 'porsi';
+
+    // 3. Hitung kuantitas akhir
+    // Misal: multiplier (1.5) * baseQuantity (100) = 150
+    const finalQuantity = multiplier * baseQuantity;
+
+    // 4. Kita kembalikan sebagai object baru agar rapi
+    // Kita menggunakan '...entry' untuk menyalin semua data asli
+    return {
+        ...entry,
+        displayQuantity: finalQuantity, // Kuantitas akhir (misal: 150)
+        displayUnit: baseUnit         // Satuannya (misal: 'g')
+    };
+};
+
 exports.getFoodCategories = async (req, res) => {
     try {
         const categories = await Food.distinct('category');
@@ -26,22 +49,17 @@ exports.searchFoods = async (req, res) => {
     }
 };
 
-// --- [PERBAIKAN 1: Bug logFood] ---
-// Memperbaiki bug di mana 'foodDatabase' digunakan alih-alih mengambil
-// data dari model 'Food' dan menyesuaikan format data untuk 'FoodLog'.
 exports.logFood = async (req, res) => {
     try {
         // Ambil 'date' juga dari body, agar pengguna bisa log untuk hari kemarin
         const { foodId, quantity, mealType, date } = req.body;
 
-        // PERBAIKAN: Cari makanan di database MongoDB
         const food = await Food.findById(foodId);
         if (!food) return res.status(404).json({ message: 'Makanan tidak ditemukan' });
 
         // Gunakan tanggal dari client, atau default ke hari ini
         const logDate = date || new Date().toISOString().split('T')[0];
 
-        // PERBAIKAN: Buat objek food yang sesuai dengan foodLogModel
         const foodDataForLog = {
             id: food._id.toString(),
             name: food.name,
@@ -49,13 +67,15 @@ exports.logFood = async (req, res) => {
             proteins: food.proteins,
             carbs: food.carbs,
             fats: food.fats,
-            category: food.category
+            category: food.category,
+            servingQuantity: food.servingQuantity,
+            servingUnit: food.servingUnit
         };
 
         const logEntry = new FoodLog({ 
             userId: req.user.userId, 
             date: logDate, 
-            food: foodDataForLog, // Gunakan objek yang sudah disiapkan
+            food: foodDataForLog,
             quantity, 
             mealType 
         });
@@ -67,12 +87,21 @@ exports.logFood = async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 };
-// --- [AKHIR PERBAIKAN 1] ---
 
 exports.getHistory = async (req, res) => {
     try {
-        const userLogs = await FoodLog.find({ userId: req.user.userId }).sort({ createdAt: -1 });
-        res.json(userLogs);
+        // 1. Gunakan .lean() untuk mendapatkan object JS murni, bukan Mongoose doc
+        // Ini membuat proses mapping lebih cepat dan aman
+        const userLogs = await FoodLog.find({ userId: req.user.userId })
+            .sort({ createdAt: -1 })
+            .lean(); 
+
+        // 2. Proses hasil log menggunakan helper
+        const processedLogs = userLogs.map(processFoodEntry);
+
+        // 3. Kirim data yang sudah diproses
+        res.json(processedLogs);
+
     } catch (error) {
         console.error("Get History Error:", error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
@@ -81,19 +110,26 @@ exports.getHistory = async (req, res) => {
 
 exports.getMealPlan = async (req, res) => {
     try {
-        const { date } = req.query; // Kita akan mengirim tanggal dari Flutter
+        const { date } = req.query; 
 
         if (!date) {
             return res.status(400).json({ message: 'Query tanggal diperlukan.' });
         }
 
-        // Format tanggal ISO 'YYYY-MM-DD'
+        // 1. Gunakan .populate() dan .lean()
         const plans = await MealPlan.find({
             userId: req.user.userId,
             date: date
-        }).populate('food'); // 'populate' sangat penting untuk mengambil detail 'food'
+        })
+        .populate('food') // Mengambil detail 'food'
+        .lean();          // Konversi ke object murni
 
-        res.json(plans);
+        // 2. Proses hasil rencana makan menggunakan helper yang SAMA
+        const processedPlans = plans.map(processFoodEntry);
+
+        // 3. Kirim data yang sudah diproses
+        res.json(processedPlans);
+        
     } catch (error) {
         console.error("Get Meal Plan Error:", error);
         res.status(500).json({ message: 'Gagal mengambil rencana makan' });
@@ -237,8 +273,6 @@ function generateSmartDailyPlan(dailyTargets, availableFoods) {
 
     return bestPlan;
 }
-// --- [AKHIR PERBAIKAN 2] ---
-
 
 exports.generateMealPlan = async (req, res) => {
     try {
@@ -276,17 +310,14 @@ exports.generateMealPlan = async (req, res) => {
         // 4. Ambil Makanan yang Sesuai Filter
         const availableFoods = await Food.find(queryFilter);
         
-        // --- [PERBAIKAN 3: Filter Tanggal] ---
-        // Mengubah < 5 menjadi === 0. Selama ada 1 makanan, generator
-        // harus tetap berjalan, ini memperbaiki error "Tidak cukup makanan".
+
         if (availableFoods.length === 0) { 
             return res.status(400).json({
                 message: "Tidak ada satupun makanan di database yang cocok dengan pantangan dan alergi Anda."
             });
         }
-        // --- [AKHIR PERBAIKAN 3] ---
 
-        // 5. Tentukan Tanggal (LOGIKA INI SUDAH BENAR)
+        // 5. Tentukan Tanggal
         const datesToGenerate = [];
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Set ke awal hari
