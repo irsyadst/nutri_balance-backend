@@ -39,8 +39,19 @@ exports.searchFoods = async (req, res) => {
     try {
         const { search, category } = req.query;
         let query = {};
-        if (category) query.category = category;
-        if (search) query.name = new RegExp(search, 'i'); // Case-insensitive search
+
+        // Jika 'category' ada, filter berdasarkan kategori
+        if (category) {
+            query.category = category;
+        }
+
+        // Jika 'search' ada, filter berdasarkan nama (menggunakan regex)
+        if (search) {
+            query.name = new RegExp(search, 'i'); // Case-insensitive search
+        }
+        
+        // Jika tidak ada search atau category, query akan kosong ({})
+        // dan akan mengembalikan semua makanan (dibatasi oleh limit)
 
         const results = await Food.find(query).limit(50); // Batasi hasil
         res.json(results);
@@ -48,7 +59,6 @@ exports.searchFoods = async (req, res) => {
         res.status(500).json({ message: 'Gagal mencari makanan' });
     }
 };
-
 exports.logFood = async (req, res) => {
     try {
         // Ambil 'date' juga dari body, agar pengguna bisa log untuk hari kemarin
@@ -156,9 +166,9 @@ function calculatePlanScore(currentMacros, targetMacros) {
     return (calError * 2) + protError + carbError + fatError;
 }
 
-
 function generateSmartDailyPlan(dailyTargets, availableFoods) {
-    let bestPlan = { breakfast: [], lunch: [], dinner: [] };
+    // Inisialisasi bestPlan dengan 'snack'
+    let bestPlan = { breakfast: [], lunch: [], dinner: [], snack: [] };
     let bestScore = Infinity;
 
     // --- Pemisahan kategori ---
@@ -168,29 +178,24 @@ function generateSmartDailyPlan(dailyTargets, availableFoods) {
     const fruits = availableFoods.filter(f => ['Buah'].includes(f.category));
     const dairySnacks = availableFoods.filter(f => ['Susu & Olahan', 'Snack'].includes(f.category));
 
-    // --- Fallback (Ini sudah OK) ---
+    // --- Fallback ---
     if (proteins.length === 0) proteins.push(...availableFoods.filter(f => f.proteins > 5));
     if (carbs.length === 0) carbs.push(...availableFoods.filter(f => f.carbs > 10));
     if (veggies.length === 0) veggies.push(...availableFoods.filter(f => f.category === 'Buah' || f.calories < 100));
     if (fruits.length === 0) fruits.push(...availableFoods.filter(f => f.category === 'Buah' || f.calories < 150));
-    if (dairySnacks.length === 0) dairySnacks.push(...availableFoods.filter(f => f.category === 'Snack' || f.calories < 200));
+    if (dairySnacks.length === 0) dairySnacks.push(...availableFoods.filter(f => f.category === 'Snack' || (f.calories > 50 && f.calories < 250))); // Fallback snack
 
-    // Makanan 'darurat'. Karena kita sudah cek (length > 0) di 'generateMealPlan', ini dijamin aman.
     const emergencyFood = availableFoods[0]; 
 
-    // --- Fungsi getRandomFood yang aman ---
     const getRandomFood = (foodList) => {
         if (foodList && foodList.length > 0) {
             return foodList[Math.floor(Math.random() * foodList.length)];
         }
-        // Jika foodList kosong, kembalikan makanan darurat
         return emergencyFood; 
     };
 
-    // Coba 200 kombinasi acak untuk menemukan yang terbaik
     for (let i = 0; i < 200; i++) {
-
-        // --- 1. Pilih 8 item makanan (Dipisah Main & Side) ---
+        // --- 1. Pilih item makanan ---
         const breakfastMain = getRandomFood(carbs);
         const breakfastSide = getRandomFood(fruits.length > 0 ? fruits : dairySnacks);
         
@@ -202,30 +207,34 @@ function generateSmartDailyPlan(dailyTargets, availableFoods) {
         const dinnerMainCarb = getRandomFood(carbs);
         const dinnerSide = getRandomFood(veggies);
 
-        // Kumpulkan item utama dan sampingan
+        // --- TAMBAHKAN PEMILIHAN SNACK ---
+        const snackItem1 = getRandomFood(dairySnacks.length > 0 ? dairySnacks : fruits);
+        
+        // Kumpulkan item utama (yang di-scaling)
         const mainItems = [breakfastMain, lunchMainProtein, lunchMainCarb, dinnerMainProtein, dinnerMainCarb];
-        const sideItems = [breakfastSide, lunchSide, dinnerSide];
+        // Kumpulkan item sampingan (qty = 1.0)
+        // --- TAMBAHKAN SNACK KE SIDE ITEMS ---
+        const sideItems = [breakfastSide, lunchSide, dinnerSide, snackItem1];
 
-        // --- 2. Hitung kalori sampingan (diasumsikan qty = 1.0) ---
+        // --- 2. Hitung kalori sampingan (qty = 1.0) ---
         let sideCalories = 0;
         sideItems.forEach(item => { if (item) sideCalories += item.calories; });
 
-        // --- 3. Hitung kalori item utama (saat qty = 1.0) ---
+        // --- 3. Hitung kalori item utama (qty = 1.0) ---
         let unscaledMainCalories = 0;
         mainItems.forEach(item => { if (item) unscaledMainCalories += item.calories; });
 
-        if (unscaledMainCalories === 0) continue; // Hindari pembagian dengan nol
+        if (unscaledMainCalories === 0) continue; 
 
-        // --- 4. Tentukan sisa kalori yang harus dipenuhi oleh item utama ---
+        // --- 4. Tentukan sisa kalori untuk item utama ---
+        // Sisa kalori = target - kalori item sampingan (termasuk snack)
         const mainTargetCalories = dailyTargets.targetCalories - sideCalories;
 
         // --- 5. Hitung 'quantity' (faktor skala) HANYA untuk item utama ---
         let scaledQty = mainTargetCalories / unscaledMainCalories;
-
-        // Batasi quantity (0.5x s/d 4x)
         scaledQty = Math.max(0.5, Math.min(scaledQty, 4.0)); 
 
-        // --- 6. Hitung ulang total makro DENGAN 'quantity' yang baru ---
+        // --- 6. Hitung ulang total makro ---
         const scaledMacros = { calories: 0, proteins: 0, carbs: 0, fats: 0 };
         const applyMacros = (item, qty) => {
             if (item) {
@@ -236,22 +245,17 @@ function generateSmartDailyPlan(dailyTargets, availableFoods) {
             }
         };
 
-        // Terapkan 'scaledQty' ke SEMUA item utama
         mainItems.forEach(item => applyMacros(item, scaledQty));
-        
-        // Terapkan '1.0' ke SEMUA item sampingan
-        sideItems.forEach(item => applyMacros(item, 1.0));
+        sideItems.forEach(item => applyMacros(item, 1.0)); // Termasuk snack
 
-        // --- 7. Hitung skor berdasarkan makro yang SUDAH DISESUAIKAN ---
+        // --- 7. Hitung skor ---
         const currentScore = calculatePlanScore(scaledMacros, dailyTargets);
 
         if (currentScore < bestScore) {
             bestScore = currentScore;
-            
-            // Bulatkan quantity HANYA saat menyimpan rencana terbaik
-            const finalQty = Math.round(scaledQty * 2) / 2; // Bulatkan ke 0.5 terdekat
+            const finalQty = Math.round(scaledQty * 2) / 2; 
 
-            // --- 8. Simpan rencana terbaik (lengkap dengan 'food' dan 'qty'-nya) ---
+            // --- 8. Simpan rencana terbaik (TERMASUK SNACK) ---
             bestPlan = {
                 breakfast: [
                     { food: breakfastMain, qty: finalQty },
@@ -266,6 +270,9 @@ function generateSmartDailyPlan(dailyTargets, availableFoods) {
                     { food: dinnerMainProtein, qty: finalQty },
                     { food: dinnerMainCarb, qty: finalQty },
                     { food: dinnerSide, qty: 1.0 }
+                ],
+                snack: [ // <-- TAMBAHKAN KEY INI
+                    { food: snackItem1, qty: 1.0 }
                 ]
             };
         }
@@ -373,7 +380,6 @@ exports.generateMealPlan = async (req, res) => {
         // 7. Buat Rencana Baru untuk Setiap Tanggal
         let newPlans = [];
         for (const date of datesToGenerate) {
-            // Panggil algoritma cerdas (yang sudah aman)
             const plan = generateSmartDailyPlan(dailyTargets, availableFoods);
 
             // Loop untuk Sarapan
@@ -388,6 +394,11 @@ exports.generateMealPlan = async (req, res) => {
             plan.dinner.forEach(item => {
                 if (item.food) newPlans.push({ userId, date, mealType: 'Makan Malam', food: item.food._id, quantity: item.qty, time: '19:00' });
             });
+            // --- TAMBAHKAN LOOP UNTUK SNACK ---
+            plan.snack.forEach(item => {
+                if (item.food) newPlans.push({ userId, date, mealType: 'Snack', food: item.food._id, quantity: item.qty, time: '15:00' });
+            });
+            // --- AKHIR TAMBAHAN ---
         }
         
         // 8. Simpan Rencana Makan Baru ke Database
