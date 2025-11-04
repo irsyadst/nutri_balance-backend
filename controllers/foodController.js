@@ -2,6 +2,7 @@ const FoodLog = require('../models/foodLogModel');
 const MealPlan = require('../models/mealPlanModel');
 const Food = require('../models/foodModel');
 const User = require('../models/userModel');
+const Notification = require('../models/notificationModel');
 
 const processFoodEntry = (entry) => {
     // 1. Ambil data makanan.
@@ -403,6 +404,18 @@ exports.generateMealPlan = async (req, res) => {
         
         // 8. Simpan Rencana Makan Baru ke Database
         await MealPlan.insertMany(newPlans);
+        // 9. Buat Notifikasi untuk User
+         try {
+            await Notification.create({
+                userId: userId,
+                title: 'Rencana Makan Telah Dibuat!',
+                body: `Rencana makan Anda untuk ${datesToGenerate.length} hari telah berhasil dibuat.`,
+                iconAsset: 'trophy', // Sesuai dengan data dummy Anda sebelumnya
+            });
+        } catch (notifError) {
+            console.error("Gagal membuat notifikasi:", notifError);
+            // Jangan hentikan proses utama jika notifikasi gagal
+        }
 
         res.status(201).json({
             message: `Rencana makan untuk ${datesToGenerate.length} hari berhasil dibuat!`

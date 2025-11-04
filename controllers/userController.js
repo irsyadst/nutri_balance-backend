@@ -1,4 +1,5 @@
 const User = require('../models/userModel');
+const Notification = require('../models/notificationModel');
 const calculateNeeds = require('../utils/calculateNeeds');
 
 exports.getProfile = async (req, res) => {
@@ -25,6 +26,19 @@ exports.updateProfile = async (req, res) => {
         res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
     } catch (error) {
         console.error("Update Profile Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    }
+};
+
+exports.getNotifications = async (req, res) => {
+    try {
+        const notifications = await Notification.find({ userId: req.user.userId })
+            .sort({ createdAt: -1 }) // Urutkan dari terbaru
+            .limit(50); // Batasi 50 notifikasi terbaru
+
+        res.json(notifications);
+    } catch (error) {
+        console.error("Get Notifications Error:", error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 };

@@ -139,7 +139,7 @@
     "proteins": 6,
     "carbs": 6,
     "fats": 14,
-    "category": "Snack",
+    "category": " ",
     "dietaryTags": ["Vegetarian", "Vegan", "Halal", "Keto", "Mediterania"],
     "allergens": ["Kacang"]
   },
