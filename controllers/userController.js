@@ -1,37 +1,35 @@
 const User = require('../models/userModel');
 const Notification = require('../models/notificationModel');
 const calculateNeeds = require('../utils/calculateNeeds');
-// Tambahkan require yang hilang
+// 1. Tambahkan require yang hilang
 const asyncHandler = require('express-async-handler');
 
-// --- PERBAIKAN: Ubah 'exports.getProfile' menjadi 'const getUserProfile' ---
+// 2. Ini kode Anda, hanya diubah format definisinya
 const getUserProfile = asyncHandler(async (req, res) => {
-  try {
-        const user = await User.findById(req.user.userId).select('-password');
-        if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
-        res.json(user);
-    } catch (error) {
-        console.error("Get Profile Error:", error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    // Saya ganti req.user.userId menjadi req.user._id agar konsisten
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) {
+        res.status(404);
+        throw new Error("Pengguna tidak ditemukan");
     }
+    res.json(user);
 });
 
-// --- PERBAIKAN: Ubah 'exports.updateProfile' menjadi 'const updateUserProfile' ---
+// 3. Ini kode Anda, hanya diubah format definisinya
 const updateUserProfile = asyncHandler(async (req, res) => {
-  try {
-        const user = await User.findById(req.user.userId);
-        if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
-
-        user.profile = req.body;
-        calculateNeeds(user.profile);
-        await user.save();
-
-        const updatedUser = await User.findById(user._id).select('-password');
-        res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
-    } catch (error) {
-        console.error("Update Profile Error:", error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    // Saya ganti req.user.userId menjadi req.user._id agar konsisten
+    const user = await User.findById(req.user._id);
+    if (!user) {
+        res.status(404);
+        throw new Error("Pengguna tidak ditemukan");
     }
+
+    user.profile = req.body;
+    calculateNeeds(user.profile);
+    await user.save();
+
+    const updatedUser = await User.findById(user._id).select('-password');
+    res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
 });
 
 // --- FUNGSI NOTIFIKASI YANG BARU ---
@@ -40,7 +38,6 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 // @route   GET /api/users/notifications
 // @access  Private
 const getNotifications = asyncHandler(async (req, res) => {
-  // Gunakan req.user._id
   const notifications = await Notification.find({ user: req.user._id }).sort({
     createdAt: -1,
   });
@@ -62,7 +59,7 @@ const createNotification = asyncHandler(async (req, res) => {
     user: req.user._id,
     title,
     message,
-    isRead: 'unread', // Default saat dibuat
+    isRead: 'unread',
   });
 
   const createdNotification = await notification.save();
@@ -76,13 +73,10 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
   const notification = await Notification.findById(req.params.id);
 
   if (notification) {
-    // Pastikan notifikasi milik user yang login
     if (notification.user.toString() !== req.user._id.toString()) {
       res.status(401);
       throw new Error('Not authorized');
     }
-
-    // Ubah field isRead menjadi 'read' sesuai permintaan
     notification.isRead = 'read';
     const updatedNotification = await notification.save();
     res.json(updatedNotification);
@@ -99,13 +93,11 @@ const deleteNotification = asyncHandler(async (req, res) => {
   const notification = await Notification.findById(req.params.id);
 
   if (notification) {
-    // Pastikan notifikasi milik user yang login
     if (notification.user.toString() !== req.user._id.toString()) {
       res.status(401);
       throw new Error('Not authorized');
     }
-
-    await notification.deleteOne(); // Mongoose v6+
+    await notification.deleteOne();
     res.json({ message: 'Notification removed' });
   } else {
     res.status(404);
@@ -113,7 +105,7 @@ const deleteNotification = asyncHandler(async (req, res) => {
   }
 });
 
-// --- PERBAIKAN: Tambahkan 'module.exports' yang hilang ---
+// 4. Tambahkan 'module.exports' yang hilang di akhir file
 module.exports = {
   getUserProfile,
   updateUserProfile,
