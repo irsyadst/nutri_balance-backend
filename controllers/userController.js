@@ -6,30 +6,32 @@ const asyncHandler = require('express-async-handler');
 
 // --- PERBAIKAN: Ubah 'exports.getProfile' menjadi 'const getUserProfile' ---
 const getUserProfile = asyncHandler(async (req, res) => {
-  // Gunakan req.user._id (sesuai authMiddleware)
-  const user = await User.findById(req.user._id).select('-password');
-  if (!user) {
-    res.status(404);
-    throw new Error('Pengguna tidak ditemukan');
-  }
-  res.json(user);
+  try {
+        const user = await User.findById(req.user.userId).select('-password');
+        if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
+        res.json(user);
+    } catch (error) {
+        console.error("Get Profile Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    }
 });
 
 // --- PERBAIKAN: Ubah 'exports.updateProfile' menjadi 'const updateUserProfile' ---
 const updateUserProfile = asyncHandler(async (req, res) => {
-  // Gunakan req.user._id
-  const user = await User.findById(req.user._id);
-  if (!user) {
-    res.status(404);
-    throw new Error('Pengguna tidak ditemukan');
-  }
+  try {
+        const user = await User.findById(req.user.userId);
+        if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
 
-  user.profile = req.body;
-  calculateNeeds(user.profile);
-  await user.save();
+        user.profile = req.body;
+        calculateNeeds(user.profile);
+        await user.save();
 
-  const updatedUser = await User.findById(user._id).select('-password');
-  res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
+        const updatedUser = await User.findById(user._id).select('-password');
+        res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
+    } catch (error) {
+        console.error("Update Profile Error:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    }
 });
 
 // --- FUNGSI NOTIFIKASI YANG BARU ---
