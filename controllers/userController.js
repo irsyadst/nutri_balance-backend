@@ -3,8 +3,6 @@ const Notification = require('../models/notificationModel');
 const calculateNeeds = require('../utils/calculateNeeds');
 const asyncHandler = require('express-async-handler');
 
-// --- PERBAIKAN 1: Ubah dari 'exports.getProfile' menjadi 'const' ---
-// dan bungkus dengan asyncHandler
 const getUserProfile = asyncHandler(async (req, res) => {
   // Ganti req.user.userId menjadi req.user._id (sesuai standar authMiddleware saya)
   const user = await User.findById(req.user._id).select('-password');
@@ -15,8 +13,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
   res.json(user);
 });
 
-// --- PERBAIKAN 2: Ubah dari 'exports.updateProfile' menjadi 'const' ---
-// dan bungkus dengan asyncHandler
+
 const updateUserProfile = asyncHandler(async (req, res) => {
   // Ganti req.user.userId menjadi req.user._id
   const user = await User.findById(req.user._id);
@@ -109,8 +106,6 @@ const deleteNotification = asyncHandler(async (req, res) => {
   }
 });
 
-// --- PERBAIKAN 3: 'module.exports' sekarang sudah benar ---
-// Karena 'getUserProfile' dan 'updateUserProfile' sudah didefinisikan sebagai const
 module.exports = {
   getUserProfile,
   updateUserProfile,
