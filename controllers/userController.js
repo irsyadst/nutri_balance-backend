@@ -1,10 +1,12 @@
 const User = require('../models/userModel');
 const Notification = require('../models/notificationModel');
 const calculateNeeds = require('../utils/calculateNeeds');
+// Tambahkan require yang hilang
 const asyncHandler = require('express-async-handler');
 
+// --- PERBAIKAN: Ubah 'exports.getProfile' menjadi 'const getUserProfile' ---
 const getUserProfile = asyncHandler(async (req, res) => {
-  // Ganti req.user.userId menjadi req.user._id (sesuai standar authMiddleware saya)
+  // Gunakan req.user._id (sesuai authMiddleware)
   const user = await User.findById(req.user._id).select('-password');
   if (!user) {
     res.status(404);
@@ -13,9 +15,9 @@ const getUserProfile = asyncHandler(async (req, res) => {
   res.json(user);
 });
 
-
+// --- PERBAIKAN: Ubah 'exports.updateProfile' menjadi 'const updateUserProfile' ---
 const updateUserProfile = asyncHandler(async (req, res) => {
-  // Ganti req.user.userId menjadi req.user._id
+  // Gunakan req.user._id
   const user = await User.findById(req.user._id);
   if (!user) {
     res.status(404);
@@ -23,17 +25,20 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   }
 
   user.profile = req.body;
-  calculateNeeds(user.profile); // Asumsi fungsi ini ada
+  calculateNeeds(user.profile);
   await user.save();
 
   const updatedUser = await User.findById(user._id).select('-password');
   res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
 });
 
+// --- FUNGSI NOTIFIKASI YANG BARU ---
+
 // @desc    Get user notifications
 // @route   GET /api/users/notifications
 // @access  Private
 const getNotifications = asyncHandler(async (req, res) => {
+  // Gunakan req.user._id
   const notifications = await Notification.find({ user: req.user._id }).sort({
     createdAt: -1,
   });
@@ -106,11 +111,11 @@ const deleteNotification = asyncHandler(async (req, res) => {
   }
 });
 
+// --- PERBAIKAN: Tambahkan 'module.exports' yang hilang ---
 module.exports = {
   getUserProfile,
   updateUserProfile,
   getNotifications,
-  // Ekspor fungsi baru
   createNotification,
   markNotificationAsRead,
   deleteNotification,
