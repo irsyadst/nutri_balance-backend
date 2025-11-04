@@ -3,33 +3,35 @@ const Notification = require('../models/notificationModel');
 const calculateNeeds = require('../utils/calculateNeeds');
 const asyncHandler = require('express-async-handler');
 
-exports.getUserProfile = async (req, res) => {
-    try {
-        const user = await User.findById(req.user.userId).select('-password');
-        if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
-        res.json(user);
-    } catch (error) {
-        console.error("Get Profile Error:", error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
-    }
-};
+// --- PERBAIKAN 1: Ubah dari 'exports.getProfile' menjadi 'const' ---
+// dan bungkus dengan asyncHandler
+const getUserProfile = asyncHandler(async (req, res) => {
+  // Ganti req.user.userId menjadi req.user._id (sesuai standar authMiddleware saya)
+  const user = await User.findById(req.user._id).select('-password');
+  if (!user) {
+    res.status(404);
+    throw new Error('Pengguna tidak ditemukan');
+  }
+  res.json(user);
+});
 
-exports.updateUserProfile = async (req, res) => {
-    try {
-        const user = await User.findById(req.user.userId);
-        if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
+// --- PERBAIKAN 2: Ubah dari 'exports.updateProfile' menjadi 'const' ---
+// dan bungkus dengan asyncHandler
+const updateUserProfile = asyncHandler(async (req, res) => {
+  // Ganti req.user.userId menjadi req.user._id
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    res.status(404);
+    throw new Error('Pengguna tidak ditemukan');
+  }
 
-        user.profile = req.body;
-        calculateNeeds(user.profile);
-        await user.save();
+  user.profile = req.body;
+  calculateNeeds(user.profile); // Asumsi fungsi ini ada
+  await user.save();
 
-        const updatedUser = await User.findById(user._id).select('-password');
-        res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
-    } catch (error) {
-        console.error("Update Profile Error:", error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
-    }
-};
+  const updatedUser = await User.findById(user._id).select('-password');
+  res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
+});
 
 // @desc    Get user notifications
 // @route   GET /api/users/notifications
@@ -40,8 +42,6 @@ const getNotifications = asyncHandler(async (req, res) => {
   });
   res.json(notifications);
 });
-
-// --- TAMBAHKAN FUNGSI BARU DI BAWAH ---
 
 // @desc    Create new notification
 // @route   POST /api/users/notifications
@@ -109,6 +109,8 @@ const deleteNotification = asyncHandler(async (req, res) => {
   }
 });
 
+// --- PERBAIKAN 3: 'module.exports' sekarang sudah benar ---
+// Karena 'getUserProfile' dan 'updateUserProfile' sudah didefinisikan sebagai const
 module.exports = {
   getUserProfile,
   updateUserProfile,
