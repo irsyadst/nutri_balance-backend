@@ -3,7 +3,7 @@ const Notification = require('../models/notificationModel');
 const calculateNeeds = require('../utils/calculateNeeds');
 const asyncHandler = require('express-async-handler');
 
-exports.getProfile = async (req, res) => {
+exports.getUserProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user.userId).select('-password');
         if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
@@ -14,7 +14,7 @@ exports.getProfile = async (req, res) => {
     }
 };
 
-exports.updateProfile = async (req, res) => {
+exports.updateUserProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user.userId);
         if (!user) return res.status(404).json({ message: "Pengguna tidak ditemukan" });
@@ -110,9 +110,10 @@ const deleteNotification = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  getProfile,
-  updateProfile,
+  getUserProfile,
+  updateUserProfile,
   getNotifications,
+  // Ekspor fungsi baru
   createNotification,
   markNotificationAsRead,
   deleteNotification,

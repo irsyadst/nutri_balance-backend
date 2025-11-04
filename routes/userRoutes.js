@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getProfile,
-  updateProfile,
+  getUserProfile,
+  updateUserProfile,
   getNotifications,
   // Tambahkan fungsi baru di bawah
   createNotification,
@@ -11,7 +11,7 @@ const {
 } = require('../controllers/userController');
 const { protect } = require('../middlewares/authMiddleware');
 
-router.route('/profile').get(protect, getProfile).put(protect, updateProfile);
+router.route('/profile').get(protect, getUserProfile).put(protect, updateUserProfile);
 
 router
   .route('/notifications')
