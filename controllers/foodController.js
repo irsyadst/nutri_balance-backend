@@ -327,9 +327,7 @@ exports.generateMealPlan = async (req, res) => {
 
         // 5. Tentukan Tanggal
         const datesToGenerate = [];
-        const today = new Date(
-            new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
-        );
+        const today = new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
         today.setHours(0, 0, 0, 0); // Set ke awal hari
 
         if (period === 'today') {
