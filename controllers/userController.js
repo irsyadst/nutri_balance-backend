@@ -110,8 +110,8 @@ const deleteNotification = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  getUserProfile,
-  updateUserProfile,
+  getProfile,
+  updateProfile,
   getNotifications,
   createNotification,
   markNotificationAsRead,
