@@ -9,21 +9,21 @@ const {
   markNotificationAsRead,
   deleteNotification,
 } = require('../controllers/userController');
-const { protect } = require('../middlewares/authMiddleware');
-
-router.route('/profile').get(protect, getUserProfile).put(protect, updateUserProfile);
+const {authenticateToken } = require('../middlewares/authMiddleware');
+console.log(authenticateToken, getUserProfile);
+router.route('/profile').get(authenticateToken, getUserProfile).put(authenticateToken, updateUserProfile);
 
 router
   .route('/notifications')
-  .get(protect, getNotifications)
+  .get(authenticateToken, getNotifications)
   // Tambahkan route POST untuk membuat notifikasi baru
-  .post(protect, createNotification);
+  .post(authenticateToken, createNotification);
 
 router
   .route('/notifications/:id')
   // Tambahkan route PUT untuk update "mark as read"
-  .put(protect, markNotificationAsRead)
+  .put(authenticateToken, markNotificationAsRead)
   // Tambahkan route DELETE untuk menghapus notifikasi
-  .delete(protect, deleteNotification);
+  .delete(authenticateToken, deleteNotification);
 
 module.exports = router;
