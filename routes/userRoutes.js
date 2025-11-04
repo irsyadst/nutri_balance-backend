@@ -1,11 +1,29 @@
 const express = require('express');
 const router = express.Router();
-const { getProfile, updateProfile, getNotifications } = require('../controllers/userController');
-const { authenticateToken } = require('../middlewares/authMiddleware');
+const {
+  getUserProfile,
+  updateUserProfile,
+  getNotifications,
+  // Tambahkan fungsi baru di bawah
+  createNotification,
+  markNotificationAsRead,
+  deleteNotification,
+} = require('../controllers/userController');
+const { protect } = require('../middlewares/authMiddleware');
 
-router.get('/profile', authenticateToken, getProfile);
-router.put('/profile', authenticateToken, updateProfile);
+router.route('/profile').get(protect, getUserProfile).put(protect, updateUserProfile);
 
-router.get('/notifications', authenticateToken, getNotifications);
+router
+  .route('/notifications')
+  .get(protect, getNotifications)
+  // Tambahkan route POST untuk membuat notifikasi baru
+  .post(protect, createNotification);
+
+router
+  .route('/notifications/:id')
+  // Tambahkan route PUT untuk update "mark as read"
+  .put(protect, markNotificationAsRead)
+  // Tambahkan route DELETE untuk menghapus notifikasi
+  .delete(protect, deleteNotification);
 
 module.exports = router;
