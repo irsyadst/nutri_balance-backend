@@ -10,7 +10,6 @@ const {
   deleteNotification,
 } = require('../controllers/userController');
 const {authenticateToken } = require('../middlewares/authMiddleware');
-console.log(authenticateToken, getUserProfile);
 router.route('/profile').get(authenticateToken, getUserProfile).put(authenticateToken, updateUserProfile);
 
 router

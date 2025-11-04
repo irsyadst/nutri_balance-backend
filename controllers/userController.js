@@ -1,44 +1,42 @@
 const User = require('../models/userModel');
 const Notification = require('../models/notificationModel');
 const calculateNeeds = require('../utils/calculateNeeds');
-// 1. Tambahkan require yang hilang
 const asyncHandler = require('express-async-handler');
 
-// 2. Ini kode Anda, hanya diubah format definisinya
+// --- PERBAIKAN: Kembali gunakan req.user.userId ---
 const getUserProfile = asyncHandler(async (req, res) => {
-    // Saya ganti req.user.userId menjadi req.user._id agar konsisten
-    const user = await User.findById(req.user._id).select('-password');
-    if (!user) {
-        res.status(404);
-        throw new Error("Pengguna tidak ditemukan");
-    }
-    res.json(user);
+  const user = await User.findById(req.user.userId).select('-password');
+  if (!user) {
+    res.status(404);
+    throw new Error('Pengguna tidak ditemukan');
+  }
+  res.json(user);
 });
 
-// 3. Ini kode Anda, hanya diubah format definisinya
+// --- PERBAIKAN: Kembali gunakan req.user.userId ---
 const updateUserProfile = asyncHandler(async (req, res) => {
-    // Saya ganti req.user.userId menjadi req.user._id agar konsisten
-    const user = await User.findById(req.user._id);
-    if (!user) {
-        res.status(404);
-        throw new Error("Pengguna tidak ditemukan");
-    }
+  const user = await User.findById(req.user.userId);
+  if (!user) {
+    res.status(404);
+    throw new Error('Pengguna tidak ditemukan');
+  }
 
-    user.profile = req.body;
-    calculateNeeds(user.profile);
-    await user.save();
+  user.profile = req.body;
+  calculateNeeds(user.profile);
+  await user.save();
 
-    const updatedUser = await User.findById(user._id).select('-password');
-    res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
+  const updatedUser = await User.findById(user.userId).select('-password');
+  res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
 });
 
-// --- FUNGSI NOTIFIKASI YANG BARU ---
+// --- FUNGSI NOTIFIKASI (DIPERBAIKI) ---
 
 // @desc    Get user notifications
 // @route   GET /api/users/notifications
 // @access  Private
 const getNotifications = asyncHandler(async (req, res) => {
-  const notifications = await Notification.find({ user: req.user._id }).sort({
+  // --- PERBAIKAN: Gunakan 'userId' (sesuai notificationModel.js) ---
+  const notifications = await Notification.find({ userId: req.user.userId }).sort({
     createdAt: -1,
   });
   res.json(notifications);
@@ -48,6 +46,7 @@ const getNotifications = asyncHandler(async (req, res) => {
 // @route   POST /api/users/notifications
 // @access  Private
 const createNotification = asyncHandler(async (req, res) => {
+  // 'message' dari frontend kita map ke 'body' di backend
   const { title, message } = req.body;
 
   if (!title || !message) {
@@ -56,9 +55,9 @@ const createNotification = asyncHandler(async (req, res) => {
   }
 
   const notification = new Notification({
-    user: req.user._id,
-    title,
-    message,
+    userId: req.user.userId, // <-- PERBAIKAN
+    title: title,
+    body: message, // <-- PERBAIKAN (model Anda menggunakan 'body')
     isRead: 'unread',
   });
 
@@ -73,7 +72,8 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
   const notification = await Notification.findById(req.params.id);
 
   if (notification) {
-    if (notification.user.toString() !== req.user._id.toString()) {
+    // --- PERBAIKAN: Gunakan 'userId' ---
+    if (notification.userId.toString() !== req.user.userId.toString()) {
       res.status(401);
       throw new Error('Not authorized');
     }
@@ -93,7 +93,8 @@ const deleteNotification = asyncHandler(async (req, res) => {
   const notification = await Notification.findById(req.params.id);
 
   if (notification) {
-    if (notification.user.toString() !== req.user._id.toString()) {
+    // --- PERBAIKAN: Gunakan 'userId' ---
+    if (notification.userId.toString() !== req.user.userId.toString()) {
       res.status(401);
       throw new Error('Not authorized');
     }
@@ -105,7 +106,7 @@ const deleteNotification = asyncHandler(async (req, res) => {
   }
 });
 
-// 4. Tambahkan 'module.exports' yang hilang di akhir file
+// Ekspor yang sudah benar
 module.exports = {
   getUserProfile,
   updateUserProfile,
