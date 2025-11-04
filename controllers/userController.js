@@ -1,6 +1,7 @@
 const User = require('../models/userModel');
 const Notification = require('../models/notificationModel');
 const calculateNeeds = require('../utils/calculateNeeds');
+const asyncHandler = require('express-async-handler');
 
 exports.getProfile = async (req, res) => {
     try {
