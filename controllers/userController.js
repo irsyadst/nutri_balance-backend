@@ -108,3 +108,12 @@ const deleteNotification = asyncHandler(async (req, res) => {
     throw new Error('Notification not found');
   }
 });
+
+module.exports = {
+  getUserProfile,
+  updateUserProfile,
+  getNotifications,
+  createNotification,
+  markNotificationAsRead,
+  deleteNotification,
+};
