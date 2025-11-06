@@ -14,7 +14,7 @@ const getAggregatedStats = async (userId, dateString) => {
     {
       $match: {
         userId: new mongoose.Types.ObjectId(userId),
-        date: dateString,
+        date: { $gte: startDate, $lte: endDate }
       },
     },
     {
@@ -55,7 +55,6 @@ const getAggregatedStats = async (userId, dateString) => {
       },
     },
     {
-      // Ubah array caloriesPerMeal menjadi object (Map)
       $project: {
         _id: 0,
         totalCalories: 1,
@@ -80,45 +79,84 @@ const getAggregatedStats = async (userId, dateString) => {
   return stats[0];
 };
 
-// @desc    Get statistics summary for a given date
+// @desc    Get statistics summary for a given date and period
 // @route   GET /api/statistics/summary
 // @access  Private
 const getStatisticsSummary = asyncHandler(async (req, res) => {
   const userId = req.user.userId;
-  
-  // Dapatkan tanggal dari query, default ke hari ini
-  const dateQuery = req.query.date || getFormattedDate(new Date());
-  
-  // Hitung tanggal kemarin
-  const today = new Date(dateQuery);
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayQuery = getFormattedDate(yesterday);
+  const period = req.query.period || 'daily';
 
-  // Dapatkan statistik hari ini dan kemarin
-  const todayStats = await getAggregatedStats(userId, dateQuery);
-  const yesterdayStats = await getAggregatedStats(userId, yesterdayQuery);
+  // Tanggal akhir adalah 'date' dari query, atau hari ini
+  const endDate = req.query.date ? new Date(req.query.date) : new Date();
+  
+  let daysInPeriod = 1;
+  let prevDaysInPeriod = 1;
+  
+  let startDate = new Date(endDate);
+  let prevStartDate = new Date(endDate);
+  let prevEndDate = new Date(endDate);
+
+  if (period === 'daily') {
+    daysInPeriod = 1;
+    prevDaysInPeriod = 1;
+    // Periode saat ini: 'endDate' (misal: 6 Nov)
+    startDate = new Date(endDate); 
+    // Periode sebelumnya: 1 hari sebelum 'endDate' (misal: 5 Nov)
+    prevEndDate.setDate(endDate.getDate() - 1);
+    prevStartDate.setDate(endDate.getDate() - 1);
+  } else if (period === 'weekly') {
+    daysInPeriod = 7;
+    prevDaysInPeriod = 7;
+    // Periode saat ini: 7 hari terakhir (misal: 31 Okt - 6 Nov)
+    startDate.setDate(endDate.getDate() - 6);
+    // Periode sebelumnya: 7 hari sebelum itu (misal: 24 Okt - 30 Okt)
+    prevEndDate.setDate(endDate.getDate() - 7);
+    prevStartDate.setDate(endDate.getDate() - 13);
+  } else if (period === 'monthly') {
+    daysInPeriod = 30;
+    prevDaysInPeriod = 30;
+    // Periode saat ini: 30 hari terakhir
+    startDate.setDate(endDate.getDate() - 29);
+    // Periode sebelumnya: 30 hari sebelum itu
+    prevEndDate.setDate(endDate.getDate() - 30);
+    prevStartDate.setDate(endDate.getDate() - 59);
+  }
+
+  // Format tanggal untuk query MongoDB
+  const startDateString = getFormattedDate(startDate);
+  const endDateString = getFormattedDate(endDate);
+  const prevStartDateString = getFormattedDate(prevStartDate);
+  const prevEndDateString = getFormattedDate(prevEndDate);
+
+  // Dapatkan statistik TOTAL untuk setiap rentang
+  const currentTotalStats = await getAggregatedStats(userId, startDateString, endDateString);
+  const previousTotalStats = await getAggregatedStats(userId, prevStartDateString, prevEndDateString);
+
+  // Hitung RATA-RATA harian
+  const currentStats = getAverageStats(currentTotalStats, daysInPeriod);
+  const yesterdayStats = getAverageStats(previousTotalStats, prevDaysInPeriod);
 
   // --- Hitung Persentase Perubahan ---
   const calcPercentChange = (today, yesterday) => {
-    if (yesterday === 0 || yesterday === null) return 0; // Hindari pembagian dengan nol
+    if (yesterday === 0 || yesterday === null) return 0;
     if (today === yesterday) return 0;
     return ((today - yesterday) / yesterday) * 100;
   };
 
   const calorieChangePercent = calcPercentChange(todayStats.totalCalories, yesterdayStats.totalCalories);
 
-  // --- Hitung Rasio Makro ---
-  const totalMacros = todayStats.totalProteins + todayStats.totalCarbs + todayStats.totalFats;
+  // --- Hitung Rasio Makro (berdasarkan rata-rata) ---
+  const totalMacros = currentStats.totalProteins + currentStats.totalCarbs + currentStats.totalFats;
   let macroPercentages, macroRatio;
 
-  if (totalMacros === 0) {
+  if (totalMacros === 0 || currentStats.totalCalories === 0) {
     macroPercentages = { 'Karbohidrat': 0, 'Protein': 0, 'Lemak': 0 };
     macroRatio = "0/0/0";
   } else {
-    const carbPercent = (todayStats.totalCarbs * 4) / (todayStats.totalCalories || 1) * 100; // 1g Karbo = 4 Kkal
-    const protPercent = (todayStats.totalProteins * 4) / (todayStats.totalCalories || 1) * 100; // 1g Prot = 4 Kkal
-    const fatPercent = (todayStats.totalFats * 9) / (todayStats.totalCalories || 1) * 100; // 1g Lemak = 9 Kkal
+    // Hitung persentase kalori dari total kalori
+    const carbPercent = (currentStats.totalCarbs * 4) / currentStats.totalCalories * 100;
+    const protPercent = (currentStats.totalProteins * 4) / currentStats.totalCalories * 100;
+    const fatPercent = (currentStats.totalFats * 9) / currentStats.totalCalories * 100;
 
     macroPercentages = {
       'Karbohidrat': carbPercent,
@@ -128,16 +166,16 @@ const getStatisticsSummary = asyncHandler(async (req, res) => {
     macroRatio = `${carbPercent.toFixed(0)}/${protPercent.toFixed(0)}/${fatPercent.toFixed(0)}`;
   }
   
-  // Hitung total makro kemarin untuk persentase perubahan makro
   const yesterdayTotalMacros = yesterdayStats.totalProteins + yesterdayStats.totalCarbs + yesterdayStats.totalFats;
   const macroChangePercent = calcPercentChange(totalMacros, yesterdayTotalMacros);
 
   res.json({
-    caloriesToday: todayStats.totalCalories,
+    // Nama field tetap sama, tapi sekarang berisi RATA-RATA
+    caloriesToday: currentStats.totalCalories, 
     calorieChangePercent: calorieChangePercent,
     macroRatio: macroRatio,
     macroChangePercent: macroChangePercent,
-    calorieDataPerMeal: todayStats.caloriesPerMeal,
+    calorieDataPerMeal: currentStats.caloriesPerMeal,
     macroDataPercentage: macroPercentages,
   });
 });
