@@ -5,10 +5,18 @@ const mongoose = require('mongoose');
 
 // Helper untuk mendapatkan tanggal YYYY-MM-DD
 const getFormattedDate = (date) => {
-  return date.toISOString().split('T')[0];
+  // Memastikan tanggal diformat ke string YYYY-MM-DD yang benar
+  // dengan mempertimbangkan zona waktu lokal server
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
-// Helper untuk menghitung statistik agregat
+/**
+ * Helper untuk menghitung statistik agregat UNTUK SATU RENTANG TANGGAL.
+ * Mengembalikan TOTAL (bukan rata-rata) untuk rentang tersebut.
+ */
 const getAggregatedStats = async (userId, startDate, endDate) => {
   const stats = await FoodLog.aggregate([
     {
@@ -18,7 +26,6 @@ const getAggregatedStats = async (userId, startDate, endDate) => {
       },
     },
     {
-      // Hitung total nutrisi per entri (nutrisi * kuantitas)
       $project: {
         mealType: 1,
         calories: { $multiply: ['$food.calories', '$quantity'] },
@@ -28,7 +35,6 @@ const getAggregatedStats = async (userId, startDate, endDate) => {
       },
     },
     {
-      // Kelompokkan berdasarkan mealType
       $group: {
         _id: '$mealType',
         totalCalories: { $sum: '$calories' },
@@ -38,19 +44,14 @@ const getAggregatedStats = async (userId, startDate, endDate) => {
       },
     },
     {
-      // Kelompokkan semua mealType menjadi satu dokumen
       $group: {
         _id: null,
         totalCalories: { $sum: '$totalCalories' },
         totalProteins: { $sum: '$totalProteins' },
         totalCarbs: { $sum: '$totalCarbs' },
         totalFats: { $sum: '$totalFats' },
-        // Simpan rincian per mealType
         caloriesPerMeal: {
-          $push: {
-            k: '$_id',
-            v: '$totalCalories',
-          },
+          $push: { k: '$_id', v: '$totalCalories' },
         },
       },
     },
@@ -66,7 +67,6 @@ const getAggregatedStats = async (userId, startDate, endDate) => {
     },
   ]);
 
-  // Jika tidak ada data, kembalikan object default
   if (stats.length === 0) {
     return {
       totalCalories: 0,
@@ -98,14 +98,29 @@ const getAverageStats = (stats, days) => {
   return avgStats;
 };
 
+
 // @desc    Get statistics summary for a given date and period
 // @route   GET /api/statistics/summary
 // @access  Private
 const getStatisticsSummary = asyncHandler(async (req, res) => {
   const userId = req.user.userId;
-  const period = req.query.period || 'daily';
-  const refDate = req.query.date ? new Date(req.query.date) : new Date();
+  const period = req.query.period || 'daily'; 
   
+  // --- PERBAIKAN BUG UTAMA ADA DI SINI ---
+  let refDate;
+  if (req.query.date) {
+    // Parsing string "YYYY-MM-DD" secara manual untuk menghindari ambiguitas timezone
+    const dateParts = req.query.date.split('-'); // ["YYYY", "MM", "DD"]
+    const year = parseInt(dateParts[0]);
+    const month = parseInt(dateParts[1]) - 1; // JS month is 0-indexed
+    const day = parseInt(dateParts[2]);
+    refDate = new Date(year, month, day, 12, 0, 0); // Buat tanggal di jam 12 siang (local time)
+  } else {
+    refDate = new Date();
+    refDate.setHours(12, 0, 0, 0); // Set ke jam 12 siang (local time)
+  }
+  // --- AKHIR PERBAIKAN ---
+
   let daysInPeriod = 1;
   let prevDaysInPeriod = 1;
   let startDate, endDate, prevStartDate, prevEndDate;
@@ -120,13 +135,13 @@ const getStatisticsSummary = asyncHandler(async (req, res) => {
     prevStartDate = new Date(refDate);
     prevStartDate.setDate(refDate.getDate() - 1);
     prevEndDate = new Date(prevStartDate);
+
   } else if (period === 'weekly') {
     daysInPeriod = 7;
     prevDaysInPeriod = 7;
 
     const dayOfWeek = refDate.getDay(); // 0 (Minggu) - 6 (Sabtu)
-    // Formula: Kurangi (hari ini) dengan (posisi hari ini) + 1 (untuk Senin)
-    // Jika Minggu (0), kita kurangi 6 hari (0 - 6 = -6)
+    // Formula untuk mencari hari Senin
     const diff = refDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
     startDate = new Date(refDate.getFullYear(), refDate.getMonth(), diff);
     
@@ -138,7 +153,6 @@ const getStatisticsSummary = asyncHandler(async (req, res) => {
     prevStartDate = new Date(prevEndDate.getFullYear(), prevEndDate.getMonth(), prevEndDate.getDate() - 6);
     
   } else if (period === 'monthly') {
-
     const currentYear = refDate.getFullYear();
     const currentMonth = refDate.getMonth(); // 0-11
     
@@ -157,6 +171,7 @@ const getStatisticsSummary = asyncHandler(async (req, res) => {
   }
 
   // Format tanggal untuk query MongoDB
+  // Kita gunakan helper getFormattedDate yang baru
   const startDateString = getFormattedDate(startDate);
   const endDateString = getFormattedDate(endDate);
   const prevStartDateString = getFormattedDate(prevStartDate);
@@ -170,28 +185,22 @@ const getStatisticsSummary = asyncHandler(async (req, res) => {
   const currentStats = getAverageStats(currentTotalStats, daysInPeriod);
   const yesterdayStats = getAverageStats(previousTotalStats, prevDaysInPeriod);
 
-  // --- Hitung Persentase Perubahan ---
+  // --- (Sisa logika SAMA) ---
   const calcPercentChange = (today, yesterday) => {
     if (yesterday === 0 || yesterday === null) return 0;
     if (today === yesterday) return 0;
     return ((today - yesterday) / yesterday) * 100;
   };
-
-  const calorieChangePercent = calcPercentChange(todayStats.totalCalories, yesterdayStats.totalCalories);
-
-  // --- Hitung Rasio Makro (berdasarkan rata-rata) ---
+  const calorieChangePercent = calcPercentChange(currentStats.totalCalories, yesterdayStats.totalCalories);
   const totalMacros = currentStats.totalProteins + currentStats.totalCarbs + currentStats.totalFats;
   let macroPercentages, macroRatio;
-
   if (totalMacros === 0 || currentStats.totalCalories === 0) {
     macroPercentages = { 'Karbohidrat': 0, 'Protein': 0, 'Lemak': 0 };
     macroRatio = "0/0/0";
   } else {
-    // Hitung persentase kalori dari total kalori
     const carbPercent = (currentStats.totalCarbs * 4) / currentStats.totalCalories * 100;
     const protPercent = (currentStats.totalProteins * 4) / currentStats.totalCalories * 100;
     const fatPercent = (currentStats.totalFats * 9) / currentStats.totalCalories * 100;
-
     macroPercentages = {
       'Karbohidrat': carbPercent,
       'Protein': protPercent,
@@ -199,12 +208,10 @@ const getStatisticsSummary = asyncHandler(async (req, res) => {
     };
     macroRatio = `${carbPercent.toFixed(0)}/${protPercent.toFixed(0)}/${fatPercent.toFixed(0)}`;
   }
-  
   const yesterdayTotalMacros = yesterdayStats.totalProteins + yesterdayStats.totalCarbs + yesterdayStats.totalFats;
   const macroChangePercent = calcPercentChange(totalMacros, yesterdayTotalMacros);
 
   res.json({
-    // Nama field tetap sama, tapi sekarang berisi RATA-RATA
     caloriesToday: currentStats.totalCalories, 
     calorieChangePercent: calorieChangePercent,
     macroRatio: macroRatio,
