@@ -9,6 +9,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const foodRoutes = require('./routes/foodRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const statisticsRoutes = require('./routes/statisticsRoutes');
 
 // Inisialisasi aplikasi Express
 const app = express();
@@ -27,6 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api', foodRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/statistics', statisticsRoutes);
 
 // Rute untuk menyajikan Landing Page
 app.get('/', (req, res) => {
