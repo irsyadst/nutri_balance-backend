@@ -9,12 +9,12 @@ const getFormattedDate = (date) => {
 };
 
 // Helper untuk menghitung statistik agregat
-const getAggregatedStats = async (userId, dateString) => {
+const getAggregatedStats = async (userId, startDate, endDate) => {
   const stats = await FoodLog.aggregate([
     {
       $match: {
         userId: new mongoose.Types.ObjectId(userId),
-        date: { $gte: startDate, $lte: endDate }
+        date: { $gte: startDate, $lte: endDate },
       },
     },
     {
@@ -79,47 +79,81 @@ const getAggregatedStats = async (userId, dateString) => {
   return stats[0];
 };
 
+// Helper untuk menghitung rata-rata dari object stats
+const getAverageStats = (stats, days) => {
+  if (days === 0) days = 1; 
+  const avgStats = {
+    totalCalories: (stats.totalCalories || 0) / days,
+    totalProteins: (stats.totalProteins || 0) / days,
+    totalCarbs: (stats.totalCarbs || 0) / days,
+    totalFats: (stats.totalFats || 0) / days,
+    caloriesPerMeal: {},
+  };
+
+  if (stats.caloriesPerMeal) {
+    for (const mealType in stats.caloriesPerMeal) {
+      avgStats.caloriesPerMeal[mealType] = (stats.caloriesPerMeal[mealType] || 0) / days;
+    }
+  }
+  return avgStats;
+};
+
 // @desc    Get statistics summary for a given date and period
 // @route   GET /api/statistics/summary
 // @access  Private
 const getStatisticsSummary = asyncHandler(async (req, res) => {
   const userId = req.user.userId;
   const period = req.query.period || 'daily';
-
-  // Tanggal akhir adalah 'date' dari query, atau hari ini
-  const endDate = req.query.date ? new Date(req.query.date) : new Date();
+  const refDate = req.query.date ? new Date(req.query.date) : new Date();
   
   let daysInPeriod = 1;
   let prevDaysInPeriod = 1;
-  
-  let startDate = new Date(endDate);
-  let prevStartDate = new Date(endDate);
-  let prevEndDate = new Date(endDate);
+  let startDate, endDate, prevStartDate, prevEndDate;
 
   if (period === 'daily') {
     daysInPeriod = 1;
     prevDaysInPeriod = 1;
-    // Periode saat ini: 'endDate' (misal: 6 Nov)
-    startDate = new Date(endDate); 
-    // Periode sebelumnya: 1 hari sebelum 'endDate' (misal: 5 Nov)
-    prevEndDate.setDate(endDate.getDate() - 1);
-    prevStartDate.setDate(endDate.getDate() - 1);
+    
+    startDate = new Date(refDate); 
+    endDate = new Date(refDate);
+    
+    prevStartDate = new Date(refDate);
+    prevStartDate.setDate(refDate.getDate() - 1);
+    prevEndDate = new Date(prevStartDate);
   } else if (period === 'weekly') {
     daysInPeriod = 7;
     prevDaysInPeriod = 7;
-    // Periode saat ini: 7 hari terakhir (misal: 31 Okt - 6 Nov)
-    startDate.setDate(endDate.getDate() - 6);
-    // Periode sebelumnya: 7 hari sebelum itu (misal: 24 Okt - 30 Okt)
-    prevEndDate.setDate(endDate.getDate() - 7);
-    prevStartDate.setDate(endDate.getDate() - 13);
+
+    const dayOfWeek = refDate.getDay(); // 0 (Minggu) - 6 (Sabtu)
+    // Formula: Kurangi (hari ini) dengan (posisi hari ini) + 1 (untuk Senin)
+    // Jika Minggu (0), kita kurangi 6 hari (0 - 6 = -6)
+    const diff = refDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    startDate = new Date(refDate.getFullYear(), refDate.getMonth(), diff);
+    
+    // Hari Minggu adalah 6 hari setelah Senin
+    endDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 6);
+
+    // Periode sebelumnya: Minggu lalu
+    prevEndDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() - 1);
+    prevStartDate = new Date(prevEndDate.getFullYear(), prevEndDate.getMonth(), prevEndDate.getDate() - 6);
+    
   } else if (period === 'monthly') {
-    daysInPeriod = 30;
-    prevDaysInPeriod = 30;
-    // Periode saat ini: 30 hari terakhir
-    startDate.setDate(endDate.getDate() - 29);
-    // Periode sebelumnya: 30 hari sebelum itu
-    prevEndDate.setDate(endDate.getDate() - 30);
-    prevStartDate.setDate(endDate.getDate() - 59);
+
+    const currentYear = refDate.getFullYear();
+    const currentMonth = refDate.getMonth(); // 0-11
+    
+    startDate = new Date(currentYear, currentMonth, 1);
+    endDate = new Date(currentYear, currentMonth + 1, 0); 
+    daysInPeriod = endDate.getDate(); 
+
+    const prevMonthDate = new Date(startDate);
+    prevMonthDate.setDate(0); 
+    const prevYear = prevMonthDate.getFullYear();
+    const prevMonth = prevMonthDate.getMonth(); 
+    
+    prevStartDate = new Date(prevYear, prevMonth, 1);
+    prevEndDate = new Date(prevYear, prevMonth + 1, 0); 
+    prevDaysInPeriod = prevEndDate.getDate();
   }
 
   // Format tanggal untuk query MongoDB
