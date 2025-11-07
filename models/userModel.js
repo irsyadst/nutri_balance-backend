@@ -24,6 +24,12 @@ const UserSchema = new mongoose.Schema({
     password: { type: String, required: false }, // Password tidak wajib untuk login Google
     googleId: { type: String, unique: true, sparse: true }, // Field baru untuk ID Google
     
+    role: {
+        type: String,
+        enum: ['user', 'admin'], // Hanya izinkan nilai 'user' atau 'admin'
+        default: 'user' // Default untuk semua pengguna baru adalah 'user'
+    },
+
     profile: {
         type: UserProfileSchema,
         default: null // Default-nya null sampai kuesioner diisi

@@ -5,7 +5,10 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "data:import": "node seeder.js",
+    "data:destroy": "node seeder.js -d",
+    "admin:create": "node seeder.js -admin"
   },
   "keywords": [],
   "author": "",

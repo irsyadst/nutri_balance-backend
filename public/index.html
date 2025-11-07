@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriBalance - Panduan Cerdas Kalori & Puasa</title>
+    <title>NutriBalance - Panduan Cerdas Kalori & Rencana Makan</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -12,7 +12,6 @@
 </head>
 <body class="bg-white text-gray-800">
 
-    <!-- Header -->
     <header class="absolute w-full z-10 p-4">
         <div class="container mx-auto flex justify-between items-center">
             <div class="flex items-center">
@@ -21,11 +20,14 @@
                 </div>
                 <h1 class="text-2xl font-bold ml-2 text-gray-800">NutriBalance</h1>
             </div>
-            <a href="#features" class="hidden md:inline bg-blue-500 text-white font-semibold py-2 px-6 rounded-full hover:bg-blue-600 transition duration-300">Fitur Kami</a>
+            
+            <div class="flex items-center space-x-2 md:space-x-4">
+                <a href="#features" class="hidden md:inline bg-blue-500 text-white font-semibold py-2 px-6 rounded-full hover:bg-blue-600 transition duration-300">Tentang Aplikasi</a>
+                <a href="/admin.html" class="hidden md:inline text-gray-600 font-semibold py-2 px-4 rounded-full hover:bg-gray-100 transition duration-300">Admin Login</a>
+            </div>
         </div>
     </header>
 
-    <!-- Hero Section -->
     <main class="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
         <div class="absolute inset-0 bg-blue-50 opacity-50 transform -skew-y-3"></div>
         <div class="container mx-auto px-6 relative">
@@ -35,7 +37,7 @@
                         Capai Versi Terbaik Dirimu, Satu Langkah Setiap Hari.
                     </h1>
                     <p class="mt-4 text-lg text-gray-600">
-                        Selamat datang di NutriBalance, solusi lengkap Badan Ideal Anda. Lacak kalori, atur puasa, dan temukan keseimbangan sempurna untuk gaya hidup sehatmu.
+                        Selamat datang di NutriBalance, partner cerdas Anda. Lacak kalori, buat rencana makan, dan pantau asupan air harian untuk capai target kesehatanmu.
                     </p>
                     <div class="mt-8 flex justify-center md:justify-start space-x-4">
                         <a href="#" class="inline-block bg-gray-800 text-white py-3 px-6 rounded-full font-semibold hover:bg-gray-900 transition duration-300">
@@ -59,11 +61,10 @@
         </div>
     </main>
 
-    <!-- Features Section -->
     <section id="features" class="py-20">
         <div class="container mx-auto px-6 text-center">
             <h2 class="text-3xl font-bold mb-3">Semua yang Anda Butuhkan</h2>
-            <p class="text-gray-600 mb-12 max-w-2xl mx-auto">Dari pelacakan kalori hingga jadwal puasa intermiten, NutriBalance dirancang untuk menjadi partner kesehatan Anda.</p>
+            <p class="text-gray-600 mb-12 max-w-2xl mx-auto">Dari pelacakan kalori harian hingga rencana makan otomatis, NutriBalance dirancang untuk menjadi partner kesehatan Anda.</p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="bg-gray-50 p-8 rounded-lg">
                     <div class="bg-blue-500 text-white rounded-full p-3 inline-block mb-4">
@@ -74,27 +75,26 @@
                 </div>
                 <div class="bg-gray-50 p-8 rounded-lg">
                      <div class="bg-green-500 text-white rounded-full p-3 inline-block mb-4">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                     </div>
-                    <h3 class="font-bold text-xl mb-2">Puasa Intermiten</h3>
-                    <p class="text-gray-600">Atur dan lacak jadwal puasa Anda dengan pengingat dan timer yang intuitif.</p>
+                    <h3 class="font-bold text-xl mb-2">Rencana Makan Cerdas</h3>
+                    <p class="text-gray-600">Dapatkan rekomendasi rencana makan harian yang dibuat khusus berdasarkan target kalori dan preferensi diet Anda.</p>
                 </div>
                  <div class="bg-gray-50 p-8 rounded-lg">
                      <div class="bg-purple-500 text-white rounded-full p-3 inline-block mb-4">
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
                     </div>
                     <h3 class="font-bold text-xl mb-2">Laporan & Wawasan</h3>
-                    <p class="text-gray-600">Visualisasikan kemajuan Anda melalui grafik dan dapatkan wawasan berharga tentang kebiasaan Anda.</p>
+                    <p class="text-gray-600">Visualisasikan kemajuan kalori, makronutrien, dan asupan air Anda melalui grafik yang mudah dipahami.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
     <footer class="bg-gray-800 text-white py-8">
         <div class="container mx-auto px-6 text-center">
             <p>&copy; 2025 NutriBalance. Semua Hak Cipta Dilindungi.</p>
-        </div>
+            </div>
     </footer>
 
 </body>
