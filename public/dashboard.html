@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - NutriBalance</title>
+    <link rel="icon" href="assets/icons/favicon.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <!-- Overlay (Mobile) -->
+    <div class="overlay"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <h2 class="page-title">Selamat Datang, Admin!</h2>
+
+        <div class="dashboard-cards">
+            <div class="card">
+                <h3>Kelola Pengguna</h3>
+                <p>Melihat, mengedit, atau menghapus data pengguna aplikasi.</p>
+                <a href="/manage-users.html" class="card-btn blue">Kelola User</a>
+            </div>
+
+            <div class="card">
+                <h3>Kelola Makanan</h3>
+                <p>Menambah, mengedit, atau menghapus data makanan di database.</p>
+                <a href="/manage-food.html" class="card-btn green">Kelola Makanan</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Floating Sidebar Toggle -->
+    <button class="sidebar-toggle"><i class="fas fa-chevron-left"></i></button>
+
+    <script src="assets/js/main.js"></script>
+</body>
+
+</html>
