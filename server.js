@@ -21,24 +21,26 @@ app.use(express.json());
 // Serve static files from 'public' folder
 app.use(express.static(path.join(__dirname, "public")));
 
-// Welcome page routes
-app.get(["/welcome", "/welcome.html"], (req, res) => {
+// Welcome page is the default landing page
+app.get(["/", "/welcome", "/welcome.html"], (req, res) => {
   res.sendFile(path.join(__dirname, "public", "welcome.html"));
 });
 
-// Admin login routes - support both /admin.html and /login.html
-app.get("/admin.html", (req, res) => {
+// Admin login routes
+app.get(["/admin", "/admin.html", "/login", "/login.html"], (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-app.get("/admin", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "login.html"));
-});
-
-// Admin dashboard routes
-app.get(["/", "/dashboard", "/dashboard.html", "/index.html"], (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "dashboard.html"));
-});
+// Admin routes (should be accessed after login)
+app.get(
+  ["/dashboard", "/dashboard.html", "/manage-user", "/manage-user.html"],
+  (req, res) => {
+    const page = req.path.includes("manage-user")
+      ? "manage-user.html"
+      : "dashboard.html";
+    res.sendFile(path.join(__dirname, "public", page));
+  }
+);
 
 // Connect to Database
 connectDB().catch((err) => {
@@ -47,11 +49,13 @@ connectDB().catch((err) => {
 });
 
 // API Routes (will only work after DB connection)
+// More specific routes first
+app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
-app.use("/api", foodRoutes);
-app.use("/api/admin", adminRoutes);
 app.use("/api/statistics", statisticsRoutes);
+// General food routes last to prevent route conflicts
+app.use("/api", foodRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

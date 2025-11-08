@@ -1,40 +1,48 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 // Ini adalah Skema UNTUK data profil
 const UserProfileSchema = new mongoose.Schema({
-    gender: String,
-    age: Number,
-    height: Number,
-    currentWeight: Number,
-    goalWeight: Number,
-    activityLevel: String,
-    goals: [String],
-    dietaryRestrictions: [String],
-    allergies: [String],
-    targetCalories: Number,
-    targetProteins: Number,
-    targetCarbs: Number,
-    targetFats: Number,
+  gender: String,
+  age: Number,
+  height: Number,
+  currentWeight: Number,
+  goalWeight: Number,
+  activityLevel: String,
+  goals: [String],
+  dietaryRestrictions: [String],
+  allergies: [String],
+  targetCalories: Number,
+  targetProteins: Number,
+  targetCarbs: Number,
+  targetFats: Number,
 });
 
 // Ini adalah Skema UTAMA untuk pengguna
-const UserSchema = new mongoose.Schema({
+const UserSchema = new mongoose.Schema(
+  {
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
     password: { type: String, required: false }, // Password tidak wajib untuk login Google
     googleId: { type: String, unique: true, sparse: true }, // Field baru untuk ID Google
-    
+
     role: {
-        type: String,
-        enum: ['user', 'admin'], // Hanya izinkan nilai 'user' atau 'admin'
-        default: 'user' // Default untuk semua pengguna baru adalah 'user'
+      type: String,
+      enum: ["user", "admin"], // Izinkan nilai 'user' dan 'admin'
+      default: "user", // Default untuk registrasi normal adalah 'user'
     },
 
     profile: {
-        type: UserProfileSchema,
-        default: null // Default-nya null sampai kuesioner diisi
-    }
+      type: UserProfileSchema,
+      default: null, // Default-nya null sampai kuesioner diisi
+    },
+  },
+  { timestamps: true }
+); // Opsi timestamps berlaku untuk UserSchema
 
-}, { timestamps: true }); // Opsi timestamps berlaku untuk UserSchema
-
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model("User", UserSchema);
