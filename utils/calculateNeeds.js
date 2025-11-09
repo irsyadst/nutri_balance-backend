@@ -6,7 +6,7 @@ const calculateNeeds = (profile) => {
     } else { 
         bmr = 447.593 + (9.247 * profile.currentWeight) + (3.098 * profile.height) - (4.330 * profile.age); 
     }
-    let activityMultiplier = 1.2; // Menetap
+    let activityMultiplier = 1.2;
     if (profile.activityLevel === 'Aktivitas Ringan') activityMultiplier = 1.375;
     if (profile.activityLevel === 'Aktivitas Sedang') activityMultiplier = 1.55;
     if (profile.activityLevel === 'Sangat Aktif') activityMultiplier = 1.725;

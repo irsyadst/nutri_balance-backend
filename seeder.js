@@ -1,14 +1,13 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs'); // Impor bcrypt untuk hash password
+const bcrypt = require('bcryptjs');
 const connectDB = require('./config/db');
 const Food = require('./models/foodModel');
-const User = require('./models/userModel'); // Impor User model
+const User = require('./models/userModel');
 const foodData = require('./data/food_data.json');
 
 connectDB();
 
-// Fungsi impor data makanan (tetap sama)
 const importData = async () => {
     try {
         await Food.deleteMany();
@@ -21,7 +20,6 @@ const importData = async () => {
     }
 };
 
-// Fungsi hapus data makanan (tetap sama)
 const deleteData = async () => {
     try {
         await Food.deleteMany();
@@ -33,14 +31,11 @@ const deleteData = async () => {
     }
 };
 
-// --- [FUNGSI BARU] ---
-// Fungsi untuk membuat akun admin
 const createAdmin = async () => {
     try {
         const adminEmail = 'admin@nutribalance.com';
-        const adminPassword = 'adminpassword123'; // Ganti dengan password yang kuat
+        const adminPassword = 'adminpassword123';
 
-        // Cek apakah admin sudah ada
         const adminExists = await User.findOne({ email: adminEmail });
         if (adminExists) {
             console.log('Akun admin sudah ada.');
@@ -48,17 +43,15 @@ const createAdmin = async () => {
             return;
         }
 
-        // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(adminPassword, salt);
 
-        // Buat user admin baru
         const adminUser = new User({
             name: 'Admin NutriBalance',
             email: adminEmail,
             password: hashedPassword,
-            role: 'admin', // Set role sebagai admin
-            profile: null // Admin tidak perlu profile kuesioner
+            role: 'admin',
+            profile: null
         });
 
         await adminUser.save();
@@ -72,13 +65,10 @@ const createAdmin = async () => {
         process.exit(1);
     }
 };
-// --- [AKHIR FUNGSI BARU] ---
 
-
-// Logika untuk menjalankan fungsi via command line
 if (process.argv[2] === '-d') {
     deleteData();
-} else if (process.argv[2] === '-admin') { // Tambahan logika
+} else if (process.argv[2] === '-admin') {
     createAdmin();
 } else {
     importData();

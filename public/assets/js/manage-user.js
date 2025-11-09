@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", function () {
-  // Constants
   const TOKEN_KEY = "adminToken";
   const ITEMS_PER_PAGE = 10;
   const API_ENDPOINTS = {
@@ -7,7 +6,6 @@ document.addEventListener("DOMContentLoaded", function () {
     user: (id) => `/api/admin/users/${id}`,
   };
 
-  // Cache DOM elements
   const elements = {
     tableBody: document.getElementById("user-table-body"),
     searchInput: document.getElementById("search-input"),
@@ -26,7 +24,6 @@ document.addEventListener("DOMContentLoaded", function () {
     confirmDelete: document.getElementById("confirm-delete"),
   };
 
-  // State
   let state = {
     users: [],
     filteredUsers: [],
@@ -37,7 +34,6 @@ document.addEventListener("DOMContentLoaded", function () {
     userToDelete: null,
   };
 
-  // Auth Check
   function getAuthHeaders() {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) {
@@ -51,11 +47,9 @@ document.addEventListener("DOMContentLoaded", function () {
     };
   }
 
-  // Initial auth check
   const headers = getAuthHeaders();
   if (!headers) return;
 
-  // API Calls
   async function fetchUsers() {
     try {
       const currentHeaders = getAuthHeaders();
@@ -160,7 +154,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // UI Rendering
   function renderUsers() {
     const start = (state.currentPage - 1) * ITEMS_PER_PAGE;
     const end = start + ITEMS_PER_PAGE;
@@ -250,7 +243,6 @@ document.addEventListener("DOMContentLoaded", function () {
     renderUsers();
   }
 
-  // Modal Management
   function openModal(modal, user = null) {
     if (modal === elements.userModal) {
       elements.userForm.reset();
@@ -296,11 +288,9 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function showToast(message, type = "success") {
-    // You can implement a toast notification system here
     alert(message);
   }
 
-  // Event Listeners
   elements.userForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -379,6 +369,5 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // Initialize
   fetchUsers();
 });

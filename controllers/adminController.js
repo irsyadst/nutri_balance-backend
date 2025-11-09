@@ -4,11 +4,9 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const User = require("../models/userModel");
 const FoodLog = require("../models/foodLogModel");
-const Food = require("../models/foodModel"); // Model Makanan
+const Food = require("../models/foodModel");
 
-// --- FUNGSI LOGIN ADMIN ---
 exports.adminLogin = async (req, res) => {
-  // ... (Fungsi login Anda - tidak berubah)
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });
@@ -30,7 +28,6 @@ exports.adminLogin = async (req, res) => {
   }
 };
 
-// --- FUNGSI MANAJEMEN USER & LOG ---
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find({})
@@ -53,22 +50,19 @@ exports.createUser = async (req, res) => {
       });
     }
 
-    // Check if email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email sudah terdaftar" });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user
     const user = new User({
       name,
       email,
       password: hashedPassword,
-      role: "admin", // Always set as admin
+      role: "admin",
     });
 
     const savedUser = await user.save();
@@ -92,7 +86,6 @@ exports.updateUser = async (req, res) => {
       return res.status(404).json({ message: "Pengguna tidak ditemukan" });
     }
 
-    // Check if email is being changed and is already taken
     if (email !== user.email) {
       const existingUser = await User.findOne({ email, _id: { $ne: userId } });
       if (existingUser) {
@@ -100,13 +93,10 @@ exports.updateUser = async (req, res) => {
       }
     }
 
-    // Update basic fields
     user.name = name || user.name;
     user.email = email || user.email;
-    // Role is always admin, cannot be changed
     user.role = "admin";
 
-    // Update password if provided
     if (password) {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password, salt);
@@ -127,7 +117,6 @@ exports.deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
 
-    // Prevent deleting the last admin
     if (req.user.role === "admin" && req.user.id === userId) {
       const adminCount = await User.countDocuments({ role: "admin" });
       if (adminCount <= 1) {
@@ -151,7 +140,6 @@ exports.deleteUser = async (req, res) => {
 };
 
 exports.getAllLogs = async (req, res) => {
-  // ... (Fungsi ini - tidak berubah)
   try {
     const logs = await FoodLog.find({})
       .sort({ createdAt: -1 })
@@ -164,9 +152,6 @@ exports.getAllLogs = async (req, res) => {
   }
 };
 
-// --- FUNGSI MANAJEMEN MAKANAN (DISESUAIKAN) ---
-
-// Helper function untuk mengubah string "a, b, c" menjadi array ["a", "b", "c"]
 const stringToArray = (str) => {
   if (!str || typeof str !== "string") return [];
   return str
@@ -176,7 +161,6 @@ const stringToArray = (str) => {
 };
 
 exports.getAllFoods = async (req, res) => {
-  // ... (Fungsi ini - tidak berubah)
   try {
     const foods = await Food.find({}).sort({ name: 1 });
     res.json(foods);
@@ -188,7 +172,6 @@ exports.getAllFoods = async (req, res) => {
 
 exports.createFood = async (req, res) => {
   try {
-    // [PERUBAHAN] Menyesuaikan field dengan model baru
     const {
       name,
       category,
@@ -202,7 +185,6 @@ exports.createFood = async (req, res) => {
       allergens,
     } = req.body;
 
-    // Validasi disesuaikan
     if (!name || !category || !calories || !servingQuantity || !servingUnit) {
       return res.status(400).json({
         message:
@@ -217,10 +199,10 @@ exports.createFood = async (req, res) => {
       proteins: proteins || 0,
       carbs: carbs || 0,
       fats: fats || 0,
-      servingQuantity, // [PERUBAHAN]
-      servingUnit, // [PERUBAHAN]
-      dietaryTags: stringToArray(dietaryTags), // [PERUBAHAN]
-      allergens: stringToArray(allergens), // [PERUBAHAN]
+      servingQuantity,
+      servingUnit,
+      dietaryTags: stringToArray(dietaryTags),
+      allergens: stringToArray(allergens),
     });
 
     const createdFood = await newFood.save();
@@ -236,23 +218,21 @@ exports.updateFood = async (req, res) => {
     const food = await Food.findById(req.params.id);
 
     if (food) {
-      // [PERUBAHAN] Update field disesuaikan
       food.name = req.body.name || food.name;
       food.category = req.body.category || food.category;
       food.calories = req.body.calories || food.calories;
       food.proteins = req.body.proteins || food.proteins;
       food.carbs = req.body.carbs || food.carbs;
       food.fats = req.body.fats || food.fats;
-      food.servingQuantity = req.body.servingQuantity || food.servingQuantity; // [PERUBAHAN]
-      food.servingUnit = req.body.servingUnit || food.servingUnit; // [PERUBAHAN]
+      food.servingQuantity = req.body.servingQuantity || food.servingQuantity;
+      food.servingUnit = req.body.servingUnit || food.servingUnit;
 
-      // Handle update untuk array
       food.dietaryTags = req.body.dietaryTags
         ? stringToArray(req.body.dietaryTags)
-        : food.dietaryTags; // [PERUBAHAN]
+        : food.dietaryTags;
       food.allergens = req.body.allergens
         ? stringToArray(req.body.allergens)
-        : food.allergens; // [PERUBAHAN]
+        : food.allergens;
 
       const updatedFood = await food.save();
       res.json(updatedFood);
@@ -266,7 +246,6 @@ exports.updateFood = async (req, res) => {
 };
 
 exports.deleteFood = async (req, res) => {
-  // ... (Fungsi ini - tidak berubah)
   try {
     const food = await Food.findById(req.params.id);
     if (food) {

@@ -10,7 +10,7 @@ const connectDB = async () => {
         console.log('✅ Database MongoDB berhasil tersambung');
     } catch (err) {
         console.error('❌ Kesalahan koneksi database:', err.message);
-        process.exit(1); // Keluar dari proses jika koneksi gagal
+        process.exit(1);
     }
 };
 

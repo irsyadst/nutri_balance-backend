@@ -1,22 +1,14 @@
-// controllers/statisticsController.js
 const asyncHandler = require('express-async-handler');
 const FoodLog = require('../models/foodLogModel');
 const mongoose = require('mongoose');
 
-// Helper untuk mendapatkan tanggal YYYY-MM-DD
 const getFormattedDate = (date) => {
-  // Memastikan tanggal diformat ke string YYYY-MM-DD yang benar
-  // dengan mempertimbangkan zona waktu lokal server
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const day = date.getDate().toString().padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
-/**
- * Helper untuk menghitung statistik agregat UNTUK SATU RENTANG TANGGAL.
- * Mengembalikan TOTAL (bukan rata-rata) untuk rentang tersebut.
- */
 const getAggregatedStats = async (userId, startDate, endDate) => {
   const stats = await FoodLog.aggregate([
     {
@@ -79,7 +71,6 @@ const getAggregatedStats = async (userId, startDate, endDate) => {
   return stats[0];
 };
 
-// Helper untuk menghitung rata-rata dari object stats
 const getAverageStats = (stats, days) => {
   if (days === 0) days = 1; 
   const avgStats = {
@@ -98,28 +89,21 @@ const getAverageStats = (stats, days) => {
   return avgStats;
 };
 
-
-// @desc    Get statistics summary for a given date and period
-// @route   GET /api/statistics/summary
-// @access  Private
 const getStatisticsSummary = asyncHandler(async (req, res) => {
   const userId = req.user.userId;
   const period = req.query.period || 'daily'; 
   
-  // --- PERBAIKAN BUG UTAMA ADA DI SINI ---
   let refDate;
   if (req.query.date) {
-    // Parsing string "YYYY-MM-DD" secara manual untuk menghindari ambiguitas timezone
-    const dateParts = req.query.date.split('-'); // ["YYYY", "MM", "DD"]
+    const dateParts = req.query.date.split('-');
     const year = parseInt(dateParts[0]);
-    const month = parseInt(dateParts[1]) - 1; // JS month is 0-indexed
+    const month = parseInt(dateParts[1]) - 1;
     const day = parseInt(dateParts[2]);
-    refDate = new Date(year, month, day, 12, 0, 0); // Buat tanggal di jam 12 siang (local time)
+    refDate = new Date(year, month, day, 12, 0, 0);
   } else {
     refDate = new Date();
-    refDate.setHours(12, 0, 0, 0); // Set ke jam 12 siang (local time)
+    refDate.setHours(12, 0, 0, 0);
   }
-  // --- AKHIR PERBAIKAN ---
 
   let daysInPeriod = 1;
   let prevDaysInPeriod = 1;
@@ -140,21 +124,18 @@ const getStatisticsSummary = asyncHandler(async (req, res) => {
     daysInPeriod = 7;
     prevDaysInPeriod = 7;
 
-    const dayOfWeek = refDate.getDay(); // 0 (Minggu) - 6 (Sabtu)
-    // Formula untuk mencari hari Senin
+    const dayOfWeek = refDate.getDay();
     const diff = refDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
     startDate = new Date(refDate.getFullYear(), refDate.getMonth(), diff);
     
-    // Hari Minggu adalah 6 hari setelah Senin
     endDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 6);
 
-    // Periode sebelumnya: Minggu lalu
     prevEndDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() - 1);
     prevStartDate = new Date(prevEndDate.getFullYear(), prevEndDate.getMonth(), prevEndDate.getDate() - 6);
     
   } else if (period === 'monthly') {
     const currentYear = refDate.getFullYear();
-    const currentMonth = refDate.getMonth(); // 0-11
+    const currentMonth = refDate.getMonth();
     
     startDate = new Date(currentYear, currentMonth, 1);
     endDate = new Date(currentYear, currentMonth + 1, 0); 
@@ -170,22 +151,17 @@ const getStatisticsSummary = asyncHandler(async (req, res) => {
     prevDaysInPeriod = prevEndDate.getDate();
   }
 
-  // Format tanggal untuk query MongoDB
-  // Kita gunakan helper getFormattedDate yang baru
   const startDateString = getFormattedDate(startDate);
   const endDateString = getFormattedDate(endDate);
   const prevStartDateString = getFormattedDate(prevStartDate);
   const prevEndDateString = getFormattedDate(prevEndDate);
 
-  // Dapatkan statistik TOTAL untuk setiap rentang
   const currentTotalStats = await getAggregatedStats(userId, startDateString, endDateString);
   const previousTotalStats = await getAggregatedStats(userId, prevStartDateString, prevEndDateString);
 
-  // Hitung RATA-RATA harian
   const currentStats = getAverageStats(currentTotalStats, daysInPeriod);
   const yesterdayStats = getAverageStats(previousTotalStats, prevDaysInPeriod);
 
-  // --- (Sisa logika SAMA) ---
   const calcPercentChange = (today, yesterday) => {
     if (yesterday === 0 || yesterday === null) return 0;
     if (today === yesterday) return 0;

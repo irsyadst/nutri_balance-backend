@@ -11,7 +11,7 @@ const NotificationSchema = new mongoose.Schema({
         type: String, 
         required: true 
     },
-    body: { // Kita ganti 'subtitle' menjadi 'body' agar lebih standar
+    body: { 
         type: String, 
         required: true 
     },
@@ -19,12 +19,11 @@ const NotificationSchema = new mongoose.Schema({
         type: Boolean, 
         default: false 
     },
-    // 'type' atau 'iconAsset' untuk membantu frontend styling
     iconAsset: { 
         type: String, 
-        default: 'notification' // Ikon default
+        default: 'notification' 
     },
     
-}, { timestamps: true }); // timestamps akan otomatis menambah createdAt & updatedAt
+}, { timestamps: true }); 
 
 module.exports = mongoose.model('Notification', NotificationSchema);

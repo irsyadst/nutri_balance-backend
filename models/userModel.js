@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 
-// Ini adalah Skema UNTUK data profil
 const UserProfileSchema = new mongoose.Schema({
   gender: String,
   age: Number,
@@ -17,7 +16,6 @@ const UserProfileSchema = new mongoose.Schema({
   targetFats: Number,
 });
 
-// Ini adalah Skema UTAMA untuk pengguna
 const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
@@ -28,21 +26,21 @@ const UserSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    password: { type: String, required: false }, // Password tidak wajib untuk login Google
-    googleId: { type: String, unique: true, sparse: true }, // Field baru untuk ID Google
+    password: { type: String, required: false },
+    googleId: { type: String, unique: true, sparse: true },
 
     role: {
       type: String,
-      enum: ["user", "admin"], // Izinkan nilai 'user' dan 'admin'
-      default: "user", // Default untuk registrasi normal adalah 'user'
+      enum: ["user", "admin"],
+      default: "user",
     },
 
     profile: {
       type: UserProfileSchema,
-      default: null, // Default-nya null sampai kuesioner diisi
+      default: null,
     },
   },
   { timestamps: true }
-); // Opsi timestamps berlaku untuk UserSchema
+);
 
 module.exports = mongoose.model("User", UserSchema);

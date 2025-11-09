@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const TempUser = require("../models/tempUserModel");
-const { sendOtpEmail } = require("../utils/emailService"); // Impor layanan email
+const { sendOtpEmail } = require("../utils/emailService");
 
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
@@ -34,8 +34,6 @@ exports.register = async (req, res) => {
       otp,
     });
 
-    // --- PERUBAHAN DI SINI ---
-    // Kirim email terlebih dahulu
     const emailSent = await sendOtpEmail(newTempUser.email, otp);
 
     if (!emailSent) {
@@ -46,7 +44,6 @@ exports.register = async (req, res) => {
         });
     }
 
-    // Simpan ke database HANYA JIKA email berhasil terkirim
     await newTempUser.save();
 
     res
@@ -76,19 +73,16 @@ exports.verifyOtp = async (req, res) => {
     if (tempUser.otp !== otp)
       return res.status(400).json({ message: "Kode OTP salah." });
 
-    // Pindahkan data dari temporer ke pengguna permanen
     const newUser = new User({
       name: tempUser.name,
       email: tempUser.email,
       password: tempUser.password,
-      role: "user", // Memastikan pengguna baru selalu mendapat role "user"
+      role: "user",
     });
     await newUser.save();
 
-    // Hapus data dari koleksi temporer
     await TempUser.deleteOne({ email: email.toLowerCase() });
 
-    // Buat token untuk login otomatis
     const token = jwt.sign(
       { userId: newUser._id, name: newUser.name },
       process.env.JWT_SECRET,
@@ -133,34 +127,28 @@ exports.googleLogin = async (req, res) => {
     if (!token)
       return res.status(400).json({ message: "Token Google tidak ditemukan." });
 
-    // Verifikasi token dengan server Google
     const ticket = await client.verifyIdToken({
       idToken: token,
-      // Sediakan SEMUA Client ID yang valid sebagai array di 'audience'
       audience: [
-        process.env.GOOGLE_CLIENT_ID_WEB, // Client ID dari "Web application"
-        process.env.GOOGLE_CLIENT_ID_ANDROID, // Client ID BARU dari "Android"
+        process.env.GOOGLE_CLIENT_ID_WEB,
+        process.env.GOOGLE_CLIENT_ID_ANDROID,
       ],
     });
 
     const { name, email, sub: googleId } = ticket.getPayload();
 
-    // Cari pengguna berdasarkan googleId
     let user = await User.findOne({ googleId });
 
-    // Jika pengguna tidak ada, buat akun baru
     if (!user) {
       user = new User({
         name,
         email,
         googleId,
-        role: "user", // Memastikan pengguna Google selalu mendapat role "user"
-        // Password tidak diperlukan untuk login via Google
+        role: "user",
       });
       await user.save();
     }
 
-    // Buat token JWT untuk sesi aplikasi kita
     const appToken = jwt.sign(
       { userId: user._id, name: user.name },
       process.env.JWT_SECRET,

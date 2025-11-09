@@ -1,6 +1,5 @@
 (function initSidebar() {
   function setup() {
-    // Get DOM elements
     const sidebar = document.getElementById("sidebar");
     const sidebarToggle = document.getElementById("sidebarToggle");
     const sidebarOverlay = document.getElementById("sidebarOverlay");
@@ -12,27 +11,23 @@
       return false; // indicate not ready
     }
 
-    // Toggle sidebar for desktop
     function toggleSidebar() {
       sidebar.classList.toggle("collapsed");
       if (mainContent) mainContent.classList.toggle("sidebar-collapsed");
       if (header) header.classList.toggle("sidebar-collapsed");
 
-      // Save state to localStorage
       localStorage.setItem(
         "sidebarCollapsed",
         sidebar.classList.contains("collapsed")
       );
     }
 
-    // Initialize sidebar state from localStorage
     if (localStorage.getItem("sidebarCollapsed") === "true") {
       sidebar.classList.add("collapsed");
       if (mainContent) mainContent.classList.add("sidebar-collapsed");
       if (header) header.classList.add("sidebar-collapsed");
     }
 
-    // Desktop sidebar toggle
     if (sidebarToggle) {
       sidebarToggle.addEventListener("click", function (e) {
         e.preventDefault();
@@ -41,7 +36,6 @@
       });
     }
 
-    // Mobile overlay click handler
     if (sidebarOverlay) {
       sidebarOverlay.addEventListener("click", function () {
         sidebar.classList.remove("mobile-visible");
@@ -49,7 +43,6 @@
       });
     }
 
-    // Handle mobile menu button click
     if (mobileMenuBtn) {
       mobileMenuBtn.addEventListener("click", function () {
         sidebar.classList.add("mobile-visible");
@@ -57,7 +50,6 @@
       });
     }
 
-    // Close sidebar on window resize if in mobile view
     window.addEventListener("resize", function () {
       if (window.innerWidth > 768) {
         sidebar.classList.remove("mobile-visible");
@@ -65,9 +57,6 @@
       }
     });
 
-    // =============================================================
-    // Auto-highlight current menu item
-    // =============================================================
     (function highlightNav() {
       // Normalize current path: treat '/' as '/dashboard.html'
       const normalizePath = (p) => (p === "/" ? "/dashboard.html" : p);
@@ -107,7 +96,6 @@
       }
     })();
 
-    // Logout handler: attach if the button exists
     const logoutBtn = document.getElementById("logout-button");
     if (logoutBtn) {
       logoutBtn.addEventListener("click", function () {

@@ -1,10 +1,4 @@
-// =============================================================
-//  NutriBalance Admin - Food Management
-//  Features: CRUD Operations, Form Handling, Modal Management
-// =============================================================
-
 document.addEventListener("DOMContentLoaded", function () {
-  // Constants & Cache DOM elements
   const TOKEN_KEY = "adminToken";
   const API_ENDPOINTS = {
     foods: "/api/admin/foods",
@@ -22,7 +16,6 @@ document.addEventListener("DOMContentLoaded", function () {
     category: document.getElementById("category"),
   };
 
-  // Auth Check
   const token = localStorage.getItem(TOKEN_KEY);
   if (!token) {
     alert("Anda harus login sebagai admin untuk mengakses halaman ini.");
@@ -35,9 +28,6 @@ document.addEventListener("DOMContentLoaded", function () {
     "Content-Type": "application/json",
   };
 
-  // =============================================================
-  // API Calls
-  // =============================================================
   async function fetchFoods() {
     try {
       const response = await fetch(API_ENDPOINTS.foods, { headers });
@@ -94,9 +84,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // =============================================================
-  // UI Rendering
-  // =============================================================
   function renderFoodTable(foods) {
     if (!foods || foods.length === 0) {
       elements.tableBody.innerHTML =
@@ -142,9 +129,6 @@ document.addEventListener("DOMContentLoaded", function () {
       .join("");
   }
 
-  // =============================================================
-  // Form & Modal Management
-  // =============================================================
   function clearCheckboxes(containerId) {
     document
       .querySelectorAll(`#${containerId} input[type="checkbox"]`)
@@ -194,7 +178,6 @@ document.addEventListener("DOMContentLoaded", function () {
       elements.modalTitle.textContent = "Edit Data Makanan";
       elements.foodIdField.value = food._id;
 
-      // Populate form fields
       [
         "name",
         "category",
@@ -232,9 +215,6 @@ document.addEventListener("DOMContentLoaded", function () {
     elements.form.reset();
   }
 
-  // =============================================================
-  // Event Handlers
-  // =============================================================
   function handleFormSubmit(event) {
     event.preventDefault();
 
@@ -278,14 +258,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // =============================================================
-  // Event Listeners
-  // =============================================================
   elements.addButton.addEventListener("click", () => openModal());
   elements.cancelButton.addEventListener("click", closeModal);
   elements.form.addEventListener("submit", handleFormSubmit);
   elements.tableBody.addEventListener("click", handleTableClick);
 
-  // Initialize
   fetchFoods();
 });

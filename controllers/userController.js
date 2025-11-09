@@ -3,7 +3,6 @@ const Notification = require('../models/notificationModel');
 const calculateNeeds = require('../utils/calculateNeeds');
 const asyncHandler = require('express-async-handler');
 
-// Menggunakan req.user.userId (sesuai standar Anda)
 const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.userId).select('-password');
   if (!user) {
@@ -13,7 +12,6 @@ const getUserProfile = asyncHandler(async (req, res) => {
   res.json(user);
 });
 
-// Menggunakan req.user.userId
 const updateUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.userId);
   if (!user) {
@@ -29,11 +27,6 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
 });
 
-// --- FUNGSI NOTIFIKASI (DIPERBAIKI) ---
-
-// @desc    Get user notifications
-// @route   GET /api/users/notifications
-// @access  Private
 const getNotifications = asyncHandler(async (req, res) => {
   const notifications = await Notification.find({ userId: req.user.userId }).sort({
     createdAt: -1,
@@ -41,9 +34,6 @@ const getNotifications = asyncHandler(async (req, res) => {
   res.json(notifications);
 });
 
-// @desc    Create new notification
-// @route   POST /api/users/notifications
-// @access  Private
 const createNotification = asyncHandler(async (req, res) => {
   const { title, message } = req.body;
 
@@ -56,16 +46,13 @@ const createNotification = asyncHandler(async (req, res) => {
     userId: req.user.userId,
     title: title,
     body: message, 
-    isRead: false, // <-- PERBAIKAN: Gunakan false (Boolean)
+    isRead: false,
   });
 
   const createdNotification = await notification.save();
   res.status(201).json(createdNotification);
 });
 
-// @desc    Mark notification as read
-// @route   PUT /api/users/notifications/:id
-// @access  Private
 const markNotificationAsRead = asyncHandler(async (req, res) => {
   const notification = await Notification.findById(req.params.id);
 
@@ -75,8 +62,6 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
       throw new Error('Not authorized');
     }
     
-    // --- PERBAIKAN: Gunakan true (Boolean) ---
-    // Ini adalah baris 80 yang menyebabkan error sebelumnya
     notification.isRead = true; 
     
     const updatedNotification = await notification.save();
@@ -87,9 +72,6 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Delete notification
-// @route   DELETE /api/users/notifications/:id
-// @access  Private
 const deleteNotification = asyncHandler(async (req, res) => {
   const notification = await Notification.findById(req.params.id);
 
@@ -106,7 +88,6 @@ const deleteNotification = asyncHandler(async (req, res) => {
   }
 });
 
-// Ekspor
 module.exports = {
   getUserProfile,
   updateUserProfile,
