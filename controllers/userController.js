@@ -19,7 +19,11 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     throw new Error('Pengguna tidak ditemukan');
   }
 
-  user.profile = req.body;
+  if (!user.profile) {
+    user.profile = {};
+  }
+  
+  Object.assign(user.profile, req.body);
   calculateNeeds(user.profile);
   await user.save();
 
