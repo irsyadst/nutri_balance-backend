@@ -5,12 +5,10 @@ document.addEventListener("DOMContentLoaded", function () {
     users: "/api/admin/users",
     user: (id) => `/api/admin/users/${id}`,
   };
-
   const elements = {
     tableBody: document.getElementById("user-table-body"),
     searchInput: document.getElementById("search-input"),
     roleFilter: document.getElementById("role-filter"),
-
     userModal: document.getElementById("user-modal"),
     deleteModal: document.getElementById("delete-modal"),
     userForm: document.getElementById("user-form"),
@@ -22,15 +20,15 @@ document.addEventListener("DOMContentLoaded", function () {
     showingEnd: document.getElementById("showing-end"),
     totalItems: document.getElementById("total-items"),
     confirmDelete: document.getElementById("confirm-delete"),
+    totalAdminCount: document.getElementById("total-admin-count"),
+    activeUsersCount: document.getElementById("active-users-count"),
   };
-
   let state = {
     users: [],
     filteredUsers: [],
     currentPage: 1,
     searchTerm: "",
     roleFilter: "",
-
     userToDelete: null,
   };
 
@@ -47,43 +45,68 @@ document.addEventListener("DOMContentLoaded", function () {
     };
   }
 
-  const headers = getAuthHeaders();
-  if (!headers) return;
+  function getInitials(name) {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+  }
+
+  function getAvatarColor(name) {
+    const colors = [
+      "bg-blue-500 text-white",
+      "bg-purple-500 text-white",
+      "bg-green-500 text-white",
+      "bg-pink-500 text-white",
+      "bg-indigo-500 text-white",
+      "bg-orange-500 text-white",
+    ];
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
+  }
 
   async function fetchUsers() {
     try {
       const currentHeaders = getAuthHeaders();
       if (!currentHeaders) return;
-
       const response = await fetch(API_ENDPOINTS.users, {
         headers: currentHeaders,
       });
-
       if (response.status === 401 || response.status === 403) {
         alert("Sesi Anda telah berakhir. Silakan login kembali.");
         window.location.href = "/admin.html";
         return;
       }
-
       if (!response.ok) {
         throw new Error("Gagal memuat data pengguna");
       }
-
       const users = await response.json();
       state.users = users;
       state.filteredUsers = users;
+
+      // Update stats
+      const adminUsers = users.filter((user) => user.role === "admin");
+      elements.totalAdminCount.textContent = adminUsers.length;
+      elements.activeUsersCount.textContent = users.length;
+
       applyFilters();
       updatePagination();
       renderUsers();
     } catch (error) {
       console.error("Error fetching users:", error);
       elements.tableBody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="px-6 py-4 text-center text-red-500">
-                        Gagal memuat data: ${error.message}
-                    </td>
-                </tr>
-            `;
+        <tr>
+          <td colspan="4" class="px-6 py-12">
+            <div class="empty-state text-center">
+              <i class="fas fa-exclamation-circle text-red-400 text-4xl mb-3"></i>
+              <p class="text-red-600 font-medium">Gagal memuat data</p>
+              <p class="text-gray-500 text-sm mt-1">${error.message}</p>
+            </div>
+          </td>
+        </tr>
+      `;
     }
   }
 
@@ -91,19 +114,13 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       const currentHeaders = getAuthHeaders();
       if (!currentHeaders) return;
-
       const url = userId ? API_ENDPOINTS.user(userId) : API_ENDPOINTS.users;
       const method = userId ? "PUT" : "POST";
-
-      console.log("Sending request to:", url, "with method:", method);
-      console.log("Request data:", userData);
-
       const response = await fetch(url, {
         method,
         headers: currentHeaders,
         body: JSON.stringify(userData),
       });
-
       let errorData;
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.indexOf("application/json") !== -1) {
@@ -111,11 +128,9 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         errorData = { message: await response.text() };
       }
-
       if (!response.ok) {
         throw new Error(errorData.message || "Gagal menyimpan data pengguna");
       }
-
       closeModal(elements.userModal);
       await fetchUsers();
       showToast(
@@ -134,17 +149,14 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       const currentHeaders = getAuthHeaders();
       if (!currentHeaders) return;
-
       const response = await fetch(API_ENDPOINTS.user(id), {
         method: "DELETE",
         headers: currentHeaders,
       });
-
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Gagal menghapus pengguna");
       }
-
       closeModal(elements.deleteModal);
       await fetchUsers();
       showToast("Pengguna berhasil dihapus!", "success");
@@ -158,57 +170,69 @@ document.addEventListener("DOMContentLoaded", function () {
     const start = (state.currentPage - 1) * ITEMS_PER_PAGE;
     const end = start + ITEMS_PER_PAGE;
     const usersToShow = state.filteredUsers.slice(start, end);
-
     if (usersToShow.length === 0) {
       elements.tableBody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">
-                        Tidak ada data pengguna yang sesuai dengan filter
-                    </td>
-                </tr>
-            `;
+        <tr>
+          <td colspan="4" class="px-6 py-12">
+            <div class="empty-state text-center">
+              <i class="fas fa-users text-gray-300 text-5xl mb-4"></i>
+              <p class="text-gray-600 font-medium text-lg mb-1">Tidak ada pengguna ditemukan</p>
+              <p class="text-gray-400 text-sm">Coba ubah filter atau kata kunci pencarian Anda</p>
+            </div>
+          </td>
+        </tr>
+      `;
       return;
     }
-
     elements.tableBody.innerHTML = usersToShow
       .map(
         (user) => `
-            <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${
-                      user.name
-                    }</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${user.email}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.role === "admin"
-                        ? "bg-purple-100 text-purple-800"
-                        : "bg-green-100 text-green-800"
-                    }">
-                        ${user.role === "admin" ? "Admin" : "User"}
-                    </span>
-                </td>
-
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button class="text-blue-600 hover:text-blue-900 mr-3" data-action="edit" data-id="${
-                      user._id
-                    }">
-                        Edit
-                    </button>
-                    <button class="text-red-600 hover:text-red-900" data-action="delete" data-id="${
-                      user._id
-                    }">
-                        Hapus
-                    </button>
-                </td>
-            </tr>
-        `
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-4 md:px-6 py-4">
+            <div class="flex items-center gap-3">
+              <div class="user-avatar ${getAvatarColor(user.name)}">
+                ${getInitials(user.name)}
+              </div>
+              <div class="min-w-0">
+                <div class="text-sm font-semibold text-gray-900 truncate">${
+                  user.name
+                }</div>
+                <div class="text-xs text-gray-500 truncate lg:hidden">${
+                  user.email
+                }</div>
+              </div>
+            </div>
+          </td>
+          <td class="px-4 md:px-6 py-4 hidden lg:table-cell">
+            <div class="text-sm text-gray-600">${user.email}</div>
+          </td>
+          <td class="px-4 md:px-6 py-4 hidden md:table-cell">
+            <span class="badge ${
+              user.role === "admin"
+                ? "bg-purple-100 text-purple-700"
+                : "bg-green-100 text-green-700"
+            }">
+              ${user.role === "admin" ? "Admin" : "User"}
+            </span>
+          </td>
+          <td class="px-4 md:px-6 py-4 text-right">
+            <div class="flex items-center justify-end gap-2">
+              <button class="action-btn w-9 h-9 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded-lg transition-all" data-action="edit" data-id="${
+                user._id
+              }" title="Edit">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="action-btn w-9 h-9 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all" data-action="delete" data-id="${
+                user._id
+              }" title="Hapus">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `
       )
       .join("");
-
     updateShowingCounts(
       start + 1,
       Math.min(end, state.filteredUsers.length),
@@ -234,10 +258,8 @@ document.addEventListener("DOMContentLoaded", function () {
         user.name.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(state.searchTerm.toLowerCase());
       const matchesRole = !state.roleFilter || user.role === state.roleFilter;
-
       return matchesSearch && matchesRole;
     });
-
     state.currentPage = 1;
     updatePagination();
     renderUsers();
@@ -249,17 +271,13 @@ document.addEventListener("DOMContentLoaded", function () {
       elements.modalTitle.textContent = user
         ? "Edit Data Pengguna"
         : "Tambah Pengguna Baru";
-
       const emailInput = document.getElementById("email");
-
       if (user) {
         elements.userForm.userId.value = user._id;
         elements.userForm.name.value = user.name;
         elements.userForm.email.value = user.email;
         elements.userForm.role.value = user.role;
         elements.userForm.password.required = false;
-
-        // Disable dan style email input untuk mode edit
         emailInput.readOnly = true;
         emailInput.classList.add(
           "bg-gray-100",
@@ -269,8 +287,7 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         elements.userForm.userId.value = "";
         elements.userForm.password.required = true;
-
-        // Enable email input untuk user baru
+        elements.userForm.role.value = "admin"; // Ensure new users are admins
         emailInput.readOnly = false;
         emailInput.classList.remove(
           "bg-gray-100",
@@ -279,18 +296,16 @@ document.addEventListener("DOMContentLoaded", function () {
         );
       }
     }
-
     modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
   }
 
   function closeModal(modal) {
     modal.classList.add("hidden");
+    document.body.style.overflow = "";
   }
 
-  function showToast(message, type = "success") {
-    alert(message);
-  }
-
+  // Event Listeners
   elements.userForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -300,11 +315,9 @@ document.addEventListener("DOMContentLoaded", function () {
       email: formData.get("email"),
       role: formData.get("role"),
     };
-
     if (formData.get("password")) {
       userData.password = formData.get("password");
     }
-
     await saveUser(userData, userId || null);
   });
 
@@ -313,13 +326,11 @@ document.addEventListener("DOMContentLoaded", function () {
   );
 
   elements.tableBody.addEventListener("click", async (e) => {
-    const target = e.target;
-    if (!target.matches("[data-action]")) return;
-
+    const target = e.target.closest("[data-action]");
+    if (!target) return;
     const action = target.dataset.action;
     const userId = target.dataset.id;
     const user = state.users.find((u) => u._id === userId);
-
     if (action === "edit" && user) {
       openModal(elements.userModal, user);
     } else if (action === "delete") {
@@ -350,6 +361,7 @@ document.addEventListener("DOMContentLoaded", function () {
       state.currentPage--;
       updatePagination();
       renderUsers();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   });
 
@@ -359,6 +371,7 @@ document.addEventListener("DOMContentLoaded", function () {
       state.currentPage++;
       updatePagination();
       renderUsers();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   });
 
@@ -367,6 +380,18 @@ document.addEventListener("DOMContentLoaded", function () {
       const modal = e.target.closest(".modal");
       closeModal(modal);
     });
+  });
+
+  elements.userModal.addEventListener("click", (e) => {
+    if (e.target === elements.userModal) {
+      closeModal(elements.userModal);
+    }
+  });
+
+  elements.deleteModal.addEventListener("click", (e) => {
+    if (e.target === elements.deleteModal) {
+      closeModal(elements.deleteModal);
+    }
   });
 
   fetchUsers();

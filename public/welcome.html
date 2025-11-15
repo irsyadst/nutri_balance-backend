@@ -48,13 +48,20 @@
                         Login</a>
                 </div>
 
-                <button class="md:hidden text-gray-600">
+                <button id="mobile-menu-button" class="md:hidden text-gray-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                 </button>
             </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden">
+            <a href="#features" class="block py-2 px-4 text-sm text-gray-600 hover:bg-gray-100">Fitur</a>
+            <a href="#benefits" class="block py-2 px-4 text-sm text-gray-600 hover:bg-gray-100">Manfaat</a>
+            <a href="#download" class="block py-2 px-4 text-sm text-gray-600 hover:bg-gray-100">Download</a>
+            <a href="/admin.html" class="block py-2 px-4 text-sm text-primary hover:bg-gray-100">Admin Login</a>
         </div>
     </nav>
 
@@ -173,9 +180,9 @@
     <section id="benefits" class="py-28 bg-gray-50">
         <div class="container mx-auto px-6">
             <div class="grid lg:grid-cols-2 gap-16 items-center">
-                <div>
-                    <img src="https://placehold.co/600x700/F3F4F6/6366F1?text=Health+Dashboard" alt="Dashboard NutriBalance"
-                        class="rounded-3xl shadow-2xl w-full">
+                <div class="flex items-center justify-center">
+                    <img src="assets/images/healthy.jpeg" alt="Dashboard NutriBalance"
+                        class="rounded-3xl shadow-2xl w-full max-w-sm object-cover hover:scale-105 transition duration-500">
                 </div>
                 <div class="space-y-8">
                     <span class="inline-block px-4 py-2 bg-indigo-100 text-primary font-semibold text-sm rounded-full">
@@ -350,6 +357,21 @@
                 e.preventDefault();
                 document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
             });
+        });
+
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const hamburgerIcon = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>`;
+        const closeIcon = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            if (mobileMenu.classList.contains('hidden')) {
+                mobileMenuButton.innerHTML = hamburgerIcon;
+            } else {
+                mobileMenuButton.innerHTML = closeIcon;
+            }
         });
     </script>
 </body>

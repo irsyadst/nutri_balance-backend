@@ -70,7 +70,6 @@ body {
 
 /* Toggle button untuk mobile */
 .sidebar-toggle {
-  display: none;
   background: none;
   border: none;
   font-size: 1.5rem;
@@ -79,6 +78,9 @@ body {
   padding: 8px;
   border-radius: 6px;
   transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-toggle:hover {
@@ -270,10 +272,9 @@ body {
 
 /* Main Content */
 .main-content {
-  margin-left: 260px;
-  padding: 24px;
-  margin-top: 60px;
-  max-width: calc(100% - 260px);
+  padding: calc(var(--header-height) + 2rem) 2rem 2rem;
+  margin-left: var(--sidebar-width);
+  transition: margin-left 0.3s ease;
 }
 .main-content.sidebar-collapsed {
   margin-left: var(--sidebar-collapsed-width);
@@ -326,70 +327,6 @@ body {
   background-color: #16a34a;
 }
 
-/* Floating Button */
-.sidebar-toggle {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--primary-blue);
-  color: white;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  z-index: 250;
-}
-
-.sidebar-toggle:hover {
-  background-color: #1d4ed8;
-}
-
-.sidebar.collapsed + .sidebar-toggle {
-  left: calc(var(--sidebar-collapsed-width) - 52px);
-}
-
-.sidebar-toggle i {
-  transition: transform 0.3s ease;
-}
-
-.sidebar.collapsed + .sidebar-toggle i {
-  transform: rotate(180deg);
-}
-
-/* Modal Styles */
-.food-modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  align-items: center;
-  justify-content: center;
-}
-
-.food-modal.show {
-  display: flex;
-}
-
-.food-modal-content {
-  background: white;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-  position: relative;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
 /* Overlay for Mobile */
 .overlay {
   display: none;
@@ -415,16 +352,23 @@ body {
   }
   .main-content {
     margin-left: 0 !important;
-    padding: 16px;
+    padding: calc(var(--header-height) + 1.5rem) 1.5rem 1.5rem;
     max-width: 100%;
   }
   .menu-toggle {
     display: block;
   }
   .sidebar-toggle {
-    display: none;
+    display: block;
   }
   .overlay.visible {
     display: block;
+  }
+}
+
+/* Hide on desktop */
+@media (min-width: 769px) {
+  .hidden-desktop {
+    display: none !important;
   }
 }

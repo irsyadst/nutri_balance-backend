@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kelola Makanan - Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/style.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="/assets/css/manage-food.css" />
 </head>
-<body class="bg-gray-100">
+
+<body class="bg-gray-50">
+
+    <div id="custom-alert" class="custom-alert"></div>
 
     <!-- Sidebar -->
     <div id="sidebar-container"></div>
@@ -17,129 +19,95 @@
     <!-- Header -->
     <div id="header-container"></div>
 
-    <!-- Food Modal -->
-    <div id="food-modal" class="food-modal">
-        <div class="food-modal-content">
-            <form id="food-form" class="food-form p-6">
-                <h3 id="modal-title" class="text-2xl font-semibold mb-4">Tambah Makanan Baru</h3>
-                <input type="hidden" id="food-id" name="foodId">
-                
-                <div class="food-form-grid">
-                    <div class="md:col-span-2">
-                        <label for="name" class="block text-sm font-medium text-gray-700">Nama Makanan*</label>
-                        <input type="text" id="name" name="name" required maxlength="100" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    
-                    <div>
-                        <label for="category" class="block text-sm font-medium text-gray-700">Kategori*</label>
-                        <select id="category" name="category" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white">
-                            <option value="" disabled selected>Pilih Kategori</option>
-                            <option value="Daging">Daging</option>
-                            <option value="Sayuran">Sayuran</option>
-                            <option value="Buah">Buah</option>
-                            <option value="Snack">Snack</option>
-                            <option value="Susu & Olahannya">Susu & Olahannya</option>
-                            <option value="Biji-bijian">Biji-bijian</option>
-                            <option value="Minuman">Minuman</option>
-                            <option value="Bumbu">Bumbu</option>
-                            <option value="Lainnya">Lainnya</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="calories" class="block text-sm font-medium text-gray-700">Kalori (kkal)*</label>
-                        <input type="number" id="calories" name="calories" step="0.1" required min="0" max="99999" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-
-                    <div>
-                        <label for="proteins" class="block text-sm font-medium text-gray-700">Protein (g)</label>
-                        <input type="number" id="proteins" name="proteins" step="0.1" min="0" max="9999" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label for="carbs" class="block text-sm font-medium text-gray-700">Karbohidrat (g)</label>
-                        <input type="number" id="carbs" name="carbs" step="0.1" min="0" max="9999" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label for="fats" class="block text-sm font-medium text-gray-700">Lemak (g)</label>
-                        <input type="number" id="fats" name="fats" step="0.1" min="0" max="9999" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    
-                    <div>
-                        <label for="servingQuantity" class="block text-sm font-medium text-gray-700">Jumlah Porsi*</label>
-                        <input type="number" id="servingQuantity" name="servingQuantity" step="0.1" required min="0" max="99999" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label for="servingUnit" class="block text-sm font-medium text-gray-700">Satuan Porsi*</label>
-                        <input type="text" id="servingUnit" name="servingUnit" required maxlength="50" placeholder="Contoh: g, ml, buah, piring" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Tag Makanan (Pilih yang sesuai)</label>
-                        <div id="dietaryTags-container" class="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <label class="checkbox-label"><input type="checkbox" name="dietaryTag" value="Vegetarian" class="rounded"> <span>Vegetarian</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="dietaryTag" value="Vegan" class="rounded"> <span>Vegan</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="dietaryTag" value="Halal" class="rounded"> <span>Halal</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="dietaryTag" value="Keto" class="rounded"> <span>Keto</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="dietaryTag" value="Mediterania" class="rounded"> <span>Mediterania</span></label>
-                        </div>
-                        <input type="text" id="dietaryTags-other" placeholder="Lainnya, pisah koma..." maxlength="100" class="mt-2 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Alergen (Pilih yang sesuai)</label>
-                        <div id="allergens-container" class="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <label class="checkbox-label"><input type="checkbox" name="allergen" value="Gluten" class="rounded"> <span>Gluten</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="allergen" value="Susu" class="rounded"> <span>Susu</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="allergen" value="Gula" class="rounded"> <span>Gula</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="allergen" value="Kedelai" class="rounded"> <span>Kedelai</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="allergen" value="Kerang" class="rounded"> <span>Kerang</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="allergen" value="Kacang" class="rounded"> <span>Kacang</span></label>
-                        </div>
-                         <input type="text" id="allergens-other" placeholder="Lainnya, pisah koma..." maxlength="100" class="mt-2 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
-                    </div>
-                </div>
-
-                <div class="mt-6 flex justify-end space-x-3">
-                    <button type="button" id="cancel-button" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-full hover:bg-gray-300">Batal</button>
-                    <button type="submit" id="save-food-button" class="bg-blue-500 text-white font-semibold py-2 px-6 rounded-full hover:bg-blue-600">Simpan</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- Food Modal Placeholder -->
+    <div id="food-modal-container"></div>
 
     <!-- Overlay (Mobile) -->
     <div class="overlay"></div>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
     <main class="main-content">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-3xl font-bold text-gray-800">Manajemen Makanan</h2>
-            <button type="button" id="add-food-button" class="bg-green-500 text-white font-semibold py-2 px-5 rounded-full hover:bg-green-600 transition duration-300">
-                + Tambah Makanan Baru
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Manajemen Makanan</h1>
+                <p class="page-subtitle">Kelola data makanan dan nutrisi</p>
+            </div>
+            <button type="button" id="add-food-button" class="btn-primary">
+                <i class="fas fa-plus"></i>
+                <span>Tambah Makanan</span>
             </button>
         </div>
-        
-        <div class="bg-white shadow-lg rounded-xl overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Makanan</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kalori</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Porsi Standar</th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="food-table-body" class="bg-white divide-y divide-gray-200">
-                    <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Memuat data...</td></tr>
-                </tbody>
-            </table>
+
+        <!-- Search & Filter Section -->
+        <div class="filter-section">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="Cari nama makanan..." />
+            </div>
+            <div class="filter-group">
+                <select id="category-filter" class="filter-select">
+                    <option value="">Semua Kategori</option>
+                    <option value="Daging">Daging</option>
+                    <option value="Sayuran">Sayuran</option>
+                    <option value="Buah">Buah</option>
+                    <option value="Snack">Snack</option>
+                    <option value="Susu & Olahannya">Susu & Olahannya</option>
+                    <option value="Biji-bijian">Biji-bijian</option>
+                    <option value="Minuman">Minuman</option>
+                    <option value="Bumbu">Bumbu</option>
+                    <option value="Lainnya">Lainnya</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="table-container">
+            <div class="table-wrapper">
+                <table class="food-table">
+                    <thead>
+                        <tr>
+                            <th>Nama Makanan</th>
+                            <th>Kategori</th>
+                            <th>Kalori</th>
+                            <th>Protein</th>
+                            <th>Karbohidrat</th>
+                            <th>Lemak</th>
+                            <th>Porsi</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="food-table-body">
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <div class="loading-state">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <span>Memuat data...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Empty State (hidden by default, shown via JS when no data) -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <i class="fas fa-utensils"></i>
+            <h3>Belum Ada Data Makanan</h3>
+            <p>Mulai tambahkan data makanan untuk mengelola informasi nutrisi</p>
+            <button type="button" class="btn-primary" onclick="document.getElementById('add-food-button').click()">
+                <i class="fas fa-plus"></i>
+                Tambah Makanan Pertama
+            </button>
         </div>
     </main>
 
-    <!-- Floating Sidebar Toggle (matches other pages) -->
-    <button class="sidebar-toggle"><i class="fas fa-chevron-left"></i></button>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script src="/assets/js/main.js"></script>
-
     <script src="/assets/js/manage-food.js"></script>
+    <script src="/assets/js/food-modal.js"></script>
 </body>
+
 </html>

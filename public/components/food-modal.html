@@ -1,0 +1,141 @@
+<!-- Food Modal -->
+<div id="food-modal" class="food-modal">
+    <div class="food-modal-content">
+        <div id="modal-alert"></div>
+        <form id="food-form" class="food-form">
+            <h3 id="modal-title">Tambah Makanan Baru</h3>
+            <input type="hidden" id="food-id" name="foodId">
+
+            <div class="food-form-grid">
+                <!-- Nama Makanan -->
+                <div>
+                    <label for="name">Nama Makanan*</label>
+                    <input type="text" id="name" name="name" required maxlength="100" placeholder="Contoh: Nasi Putih">
+                </div>
+
+                <!-- Kategori -->
+                <div>
+                    <label for="category">Kategori*</label>
+                    <select id="category" name="category" required>
+                        <option value="" disabled selected>Pilih Kategori</option>
+                        <option value="Daging">Daging</option>
+                        <option value="Sayuran">Sayuran</option>
+                        <option value="Buah">Buah</option>
+                        <option value="Snack">Snack</option>
+                        <option value="Susu & Olahannya">Susu & Olahannya</option>
+                        <option value="Biji-bijian">Biji-bijian</option>
+                        <option value="Minuman">Minuman</option>
+                        <option value="Bumbu">Bumbu</option>
+                        <option value="Lainnya">Lainnya</option>
+                    </select>
+                </div>
+
+                <!-- Kalori -->
+                <div>
+                    <label for="calories">Kalori (kkal)*</label>
+                    <input type="number" id="calories" name="calories" step="0.1" required min="0" max="99999"
+                        placeholder="0">
+                </div>
+
+                <!-- Protein -->
+                <div>
+                    <label for="proteins">Protein (g)</label>
+                    <input type="number" id="proteins" name="proteins" step="0.1" min="0" max="9999" placeholder="0">
+                </div>
+
+                <!-- Karbohidrat -->
+                <div>
+                    <label for="carbs">Karbohidrat (g)</label>
+                    <input type="number" id="carbs" name="carbs" step="0.1" min="0" max="9999" placeholder="0">
+                </div>
+
+                <!-- Lemak -->
+                <div>
+                    <label for="fats">Lemak (g)</label>
+                    <input type="number" id="fats" name="fats" step="0.1" min="0" max="9999" placeholder="0">
+                </div>
+
+                <!-- Jumlah Porsi -->
+                <div>
+                    <label for="servingQuantity">Jumlah Porsi*</label>
+                    <input type="number" id="servingQuantity" name="servingQuantity" step="0.1" required min="0"
+                        max="99999" placeholder="100">
+                </div>
+
+                <!-- Satuan Porsi -->
+                <div>
+                    <label for="servingUnit">Satuan Porsi*</label>
+                    <input type="text" id="servingUnit" name="servingUnit" required maxlength="50"
+                        placeholder="g, ml, buah, piring">
+                </div>
+
+                <!-- Tag Makanan -->
+                <div>
+                    <label class="section-label">Tag Makanan</label>
+                    <div id="dietaryTags-container" class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="dietaryTag" value="Vegetarian">
+                            <span>Vegetarian</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="dietaryTag" value="Vegan">
+                            <span>Vegan</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="dietaryTag" value="Halal">
+                            <span>Halal</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="dietaryTag" value="Keto">
+                            <span>Keto</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="dietaryTag" value="Mediterania">
+                            <span>Mediterania</span>
+                        </label>
+                    </div>
+                    <input type="text" id="dietaryTags-other" placeholder="Tag lainnya (pisahkan dengan koma)"
+                        maxlength="100" class="other-input">
+                </div>
+
+                <!-- Alergen -->
+                <div>
+                    <label class="section-label">Alergen</label>
+                    <div id="allergens-container" class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="allergen" value="Gluten">
+                            <span>Gluten</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="allergen" value="Susu">
+                            <span>Susu</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="allergen" value="Gula">
+                            <span>Gula</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="allergen" value="Kedelai">
+                            <span>Kedelai</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="allergen" value="Kerang">
+                            <span>Kerang</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="allergen" value="Kacang">
+                            <span>Kacang</span>
+                        </label>
+                    </div>
+                    <input type="text" id="allergens-other" placeholder="Alergen lainnya (pisahkan dengan koma)"
+                        maxlength="100" class="other-input">
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button type="button" id="cancel-button" class="btn-cancel">Batal</button>
+                <button type="submit" id="save-food-button" class="btn-save">Simpan Data</button>
+            </div>
+        </form>
+    </div>
+</div>

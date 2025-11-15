@@ -32,7 +32,12 @@
       sidebarToggle.addEventListener("click", function (e) {
         e.preventDefault();
         e.stopPropagation();
-        toggleSidebar();
+        if (window.innerWidth <= 768) {
+          sidebar.classList.toggle("mobile-visible");
+          sidebarOverlay.classList.toggle("visible");
+        } else {
+          toggleSidebar();
+        }
       });
     }
 
@@ -40,13 +45,6 @@
       sidebarOverlay.addEventListener("click", function () {
         sidebar.classList.remove("mobile-visible");
         sidebarOverlay.classList.remove("visible");
-      });
-    }
-
-    if (mobileMenuBtn) {
-      mobileMenuBtn.addEventListener("click", function () {
-        sidebar.classList.add("mobile-visible");
-        sidebarOverlay.classList.add("visible");
       });
     }
 
@@ -58,26 +56,35 @@
     });
 
     (function highlightNav() {
+      console.log("highlightNav function started.");
       // Normalize current path: treat '/' as '/dashboard.html'
       const normalizePath = (p) => (p === "/" ? "/dashboard.html" : p);
       const currentPath = normalizePath(window.location.pathname);
+      console.log("Current normalized path:", currentPath);
 
       function runHighlight() {
         const links = document.querySelectorAll(".nav-link");
-        if (!links || links.length === 0) return false;
+        if (!links || links.length === 0) {
+          console.log("No .nav-link elements found.");
+          return false;
+        }
         links.forEach((link) => {
           try {
             const linkPath = new URL(link.href, window.location.origin)
               .pathname;
+            console.log("Comparing link:", link.href, "Normalized link path:", normalizePath(linkPath), "with current path:", currentPath);
             if (normalizePath(linkPath) === currentPath) {
               link.classList.add("active");
+              console.log("Added 'active' class to:", link.href);
               // set aria-current for accessibility
               link.setAttribute("aria-current", "page");
             } else {
               link.classList.remove("active");
+              console.log("Removed 'active' class from:", link.href);
               link.removeAttribute("aria-current");
             }
           } catch (e) {
+            console.error("Error processing link href:", link.href, e);
             // ignore malformed hrefs
           }
         });
@@ -89,8 +96,10 @@
         let attempts = 0;
         const retry = setInterval(() => {
           attempts++;
+          console.log("Retrying highlightNav, attempt:", attempts);
           if (runHighlight() || attempts > 20) {
             clearInterval(retry);
+            if (attempts > 20) console.warn("highlightNav retries exhausted.");
           }
         }, 150);
       }

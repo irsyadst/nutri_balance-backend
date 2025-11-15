@@ -1,0 +1,54 @@
+.card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1);
+}
+.user-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.action-btn {
+    transition: all 0.2s ease;
+}
+.action-btn:hover {
+    transform: scale(1.05);
+}
+.badge {
+    font-weight: 500;
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border-radius: 6px;
+    letter-spacing: 0.3px;
+}
+.modal-backdrop {
+    backdrop-filter: blur(4px);
+}
+.input-focus:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.stat-card-2 {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+.empty-state {
+    padding: 48px 24px;
+}
+@media (max-width: 768px) {
+    .user-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 12px;
+    }
+}
