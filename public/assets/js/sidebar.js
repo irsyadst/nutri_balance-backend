@@ -8,7 +8,7 @@
     const mobileMenuBtn = document.querySelector(".menu-toggle");
 
     if (!sidebar) {
-      return false; // indicate not ready
+      return false; 
     }
 
     function toggleSidebar() {
@@ -57,7 +57,6 @@
 
     (function highlightNav() {
       console.log("highlightNav function started.");
-      // Normalize current path: treat '/' as '/dashboard.html'
       const normalizePath = (p) => (p === "/" ? "/dashboard.html" : p);
       const currentPath = normalizePath(window.location.pathname);
       console.log("Current normalized path:", currentPath);
@@ -76,7 +75,6 @@
             if (normalizePath(linkPath) === currentPath) {
               link.classList.add("active");
               console.log("Added 'active' class to:", link.href);
-              // set aria-current for accessibility
               link.setAttribute("aria-current", "page");
             } else {
               link.classList.remove("active");
@@ -85,13 +83,11 @@
             }
           } catch (e) {
             console.error("Error processing link href:", link.href, e);
-            // ignore malformed hrefs
           }
         });
         return true;
       }
 
-      // Try immediately and retry for a short while to handle async injection
       if (!runHighlight()) {
         let attempts = 0;
         const retry = setInterval(() => {
@@ -116,11 +112,9 @@
     return true;
   }
 
-  // Run setup now or when DOM is ready. If not ready (sidebar not injected yet), retry.
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
       if (!setup()) {
-        // retry a few times if sidebar isn't present yet
         let attempts = 0;
         const retry = setInterval(() => {
           attempts++;

@@ -151,7 +151,6 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            // Hide error and show loading
             errorMessage.classList.add('hidden');
             buttonText.classList.add('hidden');
             buttonLoading.classList.remove('hidden');
@@ -199,7 +198,6 @@
             }
         });
 
-        // Input animation on focus
         const inputs = document.querySelectorAll('input');
         inputs.forEach(input => {
             input.addEventListener('focus', function () {

@@ -287,7 +287,7 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         elements.userForm.userId.value = "";
         elements.userForm.password.required = true;
-        elements.userForm.role.value = "admin"; // Ensure new users are admins
+        elements.userForm.role.value = "admin";
         emailInput.readOnly = false;
         emailInput.classList.remove(
           "bg-gray-100",

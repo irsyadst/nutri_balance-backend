@@ -27,7 +27,6 @@ function showToast(message, type = "success") {
 
   toastContainer.appendChild(toast);
 
-  // Animate in
   setTimeout(() => {
     toast.classList.add("show");
   }, 100);
